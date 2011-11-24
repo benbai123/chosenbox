@@ -28,5 +28,7 @@ import org.zkoss.zul.Selectbox;
  * 
  */
 public class Chosenbox extends Selectbox {
-
+	public String getZclass() {
+		return _zclass == null ? "z-chosenbox" : _zclass;
+	}
 }

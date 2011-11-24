@@ -13,13 +13,16 @@ This program is distributed under LGPL Version 3.0 in the hope that
 it will be useful, but WITHOUT ANY WARRANTY.
 */
 function (out) {
-	out.push('<select', this.domAttrs_(), '>');
+	var zcls = this.getZclass(),
+		uid = this.uuid;
+	out.push('<div id="', uid, '" class="',zcls,'">',
+			'<div id="', uid, '-cnt" class="',zcls,'-cnt">',
+			'<input id="', uid, '-inp" class="',zcls,'-inp" />',
+			'<div id="', uid, '-pp" class="',zcls,'-pp ', zcls,'-pp-hidden">',
+			'<div id="', uid, '-sel" class="',zcls,'-sel">');
 	var s = $eval(this.items) || [] ;
 	for (var i = 0, j = s.length; i < j; i++) {
-		out.push('<option');
-		if (this._selectedIndex > -1 && this._selectedIndex == i)
-			out.push(' selected="selected"');
-		out.push('>', s[i], '</option>');
+		out.push('<div class="',zcls,'-option">', s[i], '</div>');
 	}
-	out.push('</select>');
+	out.push('</div></div></div></div>');
 }
