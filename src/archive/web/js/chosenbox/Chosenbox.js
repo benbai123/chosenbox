@@ -14,6 +14,10 @@ it will be useful, but WITHOUT ANY WARRANTY.
 */
 chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_width: 300,
+	$init: function () {
+		this.$supers('$init', arguments);
+		this._selItems = [];
+	},
 	$define: {
 		/**
 		 * Returns the tab order of this component.
@@ -38,8 +42,15 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 * Selects the item with the given index.
 		 * @param int selectedIndex
 		 */
-		selectedIndex: function (selectedIndex) {
+		selectedIndex: function (selectedIndex, opts) {
 			// TODO: handle item selection
+			if (this.$n()) {
+				if (opts && opts.sendOnSelect)
+					this._clearSelection(false);
+				else
+					this._clearSelection(true);
+				this._doSelect(jq(this.$n('sel')).children()[selectedIndex]);
+			}
 		},
 		/**
 		 * Returns whether it is disabled.
@@ -92,14 +103,27 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var zcls = this._zclass;
 		return zcls != null ? zcls: "z-chosenbox";
 	},
-
+	setChgSel: function (val) { //called from the server
+		var s = val.split(','),
+			selItems = this._selItems,
+			options = jq(this.$n('sel')).children(),
+			index,
+			i;
+		for (i = 0; i < s.length; i++) {
+			var element = options[s[i]];
+			if (selItems.indexOf(element) < 0)
+				this._doSelect(element);
+		}
+	},
 	bind_: function () {
-		this.$supers(zul.wgt.Selectbox, 'bind_', arguments);
+		this.$supers(chosenbox.Chosenbox, 'bind_', arguments);
 		var inp = this.$n('inp'),
 			sel = this.$n('sel'),
 			pp = this.$n('pp');
 
-		this.domListen_(inp, 'onChange')
+		this.domListen_(inp, 'onChange', '_doTxChange')
+			.domListen_(inp, 'onKeyDown', '_doTxChange')
+			.domListen_(inp, 'onKeyUp', '_fixDisplay')
 			.domListen_(inp, 'onBlur', 'doBlur_')
 			.domListen_(sel, 'onClick', 'doClick_')
 			.domListen_(sel, 'onMouseOver', 'doMouseOver_')
@@ -116,7 +140,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	unbind_: function () {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
-		this.domUnlisten_(inp, 'onChange')
+		this.domUnlisten_(inp, 'onChange', '_doTxChange')
+			.domUnlisten_(inp, 'onKeyDown', '_doTxChange')
 			.domUnlisten_(inp, 'onBlur', 'doBlur_')
 			.domUnlisten_(sel, 'onClick', 'doClick_')
 			.domUnlisten_(sel, 'onMouseOver', 'doMouseOver_')
@@ -124,9 +149,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			.domUnlisten_(sel, 'onMouseDown', 'doMouseDown_');
 
 		this._ignoreFloatUp = null;
-		this.$supers(zul.wgt.Selectbox, 'unbind_', arguments);
+		this.$supers(chosenbox.Chosenbox, 'unbind_', arguments);
 	},
-	// mousedown on sel or option
 	doMouseDown_: function (evt) {
 		if (this._open)
 			this._ignoreFloatUp = true;
@@ -161,36 +185,74 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// select an item
 	_doSelect: function (target) {
-		var sel = jq(this.$n('sel')),
-			options = sel.children(),
+		var options = jq(this.$n('sel')).children(),
 			index;
-
 		for (index = 0; index < options.length; index ++)
 			if (options[index] == target) {
-				var div = document.createElement("div"),
+				var content = document.createElement("div"),
+					delbtn = document.createElement("div"),
 					wgt = this;
-				div.innerHTML = target.innerHTML;
-				div.className = this.getZclass() + '-sel-item';
-				div.opt_index = index; // save the index
-				jq(div).bind('click', function () {
-					wgt._doDeselect(div);
+				content.innerHTML = target.innerHTML;
+				content.className = this.getZclass() + '-sel-item';
+				content.opt_index = index; // save the index
+				delbtn.innerHTML = 'X';
+				delbtn.className = this.getZclass() + '-del-btn';
+				content.appendChild(delbtn);
+				jq(delbtn).bind('click', function () {
+					wgt._doDeselect(content);
 				});
-				this.$n('cnt').insertBefore(div, this.$n('inp')); // add div mark
+				this.$n('cnt').insertBefore(content, this.$n('inp')); // add div mark
 				target.style.display = 'none'; // hide selected item
+				// record the selected item so we can detect whether an item is selected easily.
+				this._selItems.push(target);
+
 				this._doOptOut(target); // clear highlight
 				break;
 			}
-		
+		this.fireOnSelect();
 		this.setOpen(false);
+		// this._updatePopupPosition(this.$n(), this.$n('pp'));
 	},
 	// deselect an item
-	_doDeselect: function (selectedItem) {
+	_doDeselect: function (selectedItem, opts) {
+		var element = jq(this.$n('sel')).children()[selectedItem.opt_index];
+		// remove record
+		this._selItems.splice(this._selItems.indexOf(element), 1);
 		// show deselected item
-		jq(this.$n('sel')).children()[selectedItem.opt_index].style.display = 'block';
+		element.style.display = 'block';
 		// remove div mark
 		jq(selectedItem).remove();
 		if (this._open)
 			this.setOpen(false);
+		if (!(opts && opts.fromServer))
+			this.fireOnSelect(); // only fire if active from client
+	},
+	_clearSelection: function (isFromServer) {
+		var cnt = this.$n('cnt'),
+			c;
+		if (cnt)
+			c = cnt.firstChild;
+			while (c) {
+				var next = c.nextSibling;
+				if (c.opt_index >= 0)
+					this._doDeselect(c, {fromServer: isFromServer});
+				else
+					break;
+				c = next;
+			}
+			
+	},
+	fireOnSelect: function (evt) {
+		var options = jq(this.$n('sel')).children(),
+			selItems = this._selItems,
+			ref = this,
+			data = [],
+			index;
+
+		for (index = 0; index < options.length; index ++)
+			if (selItems.indexOf(options[index]) >= 0)
+				data.push(index+'');
+		this.fire('onSelect', zk.copy({items: data, reference: ref}));
 	},
 	//Bug 3304408: IE does not fire onchange
 	doBlur_: function (evt) {
@@ -216,6 +278,16 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_doChange: function (evt) {
 		
 	},
+	_doTxChange: function (evt) {
+		var inp = evt.domTarget,
+			txcnt = this.$n('txcnt'),
+			wgt = this;
+
+		if (!this.fixInputWidth) // check every 100ms while input
+			this.fixInputWidth = setTimeout(function () { // do after event
+				wgt._fixInputWidth(inp, txcnt)
+			}, 100);
+	},
 	setOpen: function (open, fromServer) {
 		this._open = open;
 		var n = this.$n(),
@@ -227,27 +299,18 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			// required for setTopmost 
 			this.setFloating_(true);
 			this.setTopmost();
-
-			var left = 0,
-				top = 0;
-	
-			var p = n;
-
-			left += p.offsetLeft;
-			top += p.offsetTop;
-			// evaluate the top and left
-			while ((p = p.offsetParent)) {
-				left += p.offsetLeft;
-				top += p.offsetTop;
-			}
-			pp.style.left = left + 'px';
-			pp.style.top = top + jq(this.$n()).height() + 'px';
+			var offset = this._evalOffset(n);
+			
+			pp.style.left = offset.left + 'px';
+			pp.style.top = offset.top + jq(this.$n()).height() + 'px';
 		} else {
 			this.setFloating_(false);
 		}
 		pp.style.zIndex = this.$n().style.zIndex;
-		if (open)
+		if (open) {
+			this._fixDisplay();
 			zk(pp).slideDown(this);
+		}
 		else {
 			pp.style.display = 'none';
 			var wgt = this;
@@ -255,7 +318,73 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		}
 		
 	},
+	// calculate the left and top for drop-down list
+	_evalOffset: function (n) {
+		var _left = 0,
+			_top = 0,
+			p = n;
 
+		_left += p.offsetLeft;
+		_top += p.offsetTop;
+		// evaluate the top and left
+		while ((p = p.offsetParent)) {
+			_left += p.offsetLeft;
+			_top += p.offsetTop;
+		}
+		return {left: _left, top: _top};
+	},
+	// calculate the width for input field
+	_fixInputWidth: function (inp, txcnt) {
+		// copy value to hidden txcnt
+		txcnt.innerHTML = inp.value;
+		// get width from hidden txcnt
+		var width = jq(txcnt).width() + 30,
+			max = jq(this.$n('cnt')).width() - 5;
+		if (width > max)
+			inp.style.width = max + 'px';
+		else
+			inp.style.width = width + 'px';
+		if (this.fixInputWidth) {
+			clearTimeout(this.fixInputWidth);
+			this.fixInputWidth = null;
+		}
+	},
+	// filt out not matched item
+	_fixDisplay: function () {
+		var str = this.$n('inp').value;
+
+		var selItems = this._selItems,
+			options = jq(this.$n('sel')).children(),
+			index, element, eStyle,
+			found = false;
+
+		// iterate through item list
+		for (index = 0, element = options[index];
+			index < options.length;
+			index ++, element = options[index])
+			if (selItems.indexOf(element) < 0) { // not process selected items
+				eStyle = element.style;
+				if (str != '' && !element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))
+					eStyle.display = 'none'; // hide if has input and not match
+				else {
+					eStyle.display = 'block'; // show otherwise
+					found = true;
+				}
+			}
+		var empty = this.$n('empty');
+		if (!found) { // show empty message if not found anything
+			empty.innerHTML = 'no result match your input - ' + str;
+			empty.style.display = 'block';
+		} else
+			empty.style.display = 'none';
+	},
+	_updatePopupPosition: function (n, pp) {
+		var offset = this._evalOffset(n, pp);
+		
+		pp.style.left = offset.left + 'px';
+		pp.style.top = offset.top + jq(this.$n()).height() + 'px';
+	},
+	// move popup node back
 	_restorepp: function () {
 		var n = this.$n(),
 			pp = this.$n('pp');

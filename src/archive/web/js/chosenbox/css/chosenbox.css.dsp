@@ -16,16 +16,36 @@
 	<c:if test="${zk.ie < 8}">
 		position: relative;
 	</c:if>
+	overflow: hidden;
 }
 .z-chosenbox-sel-item {
 	border: 1px solid #CCCCCC;
-}
-
-.z-chosenbox-inp {
 	display: inline-block;
 	<c:if test="${zk.ie < 8}">
 		display: inline;
 	</c:if>
+}
+.z-chosenbox-del-btn {
+	border: 1px solid #CCCCCC;
+	display: inline-block;
+	<c:if test="${zk.ie < 8}">
+		display: inline;
+	</c:if>
+}
+.z-chosenbox-inp {
+	display: inline-block;
+	width: 30px;
+	<c:if test="${zk.ie < 8}">
+		display: inline;
+	</c:if>
+	font-size: ${fontSizeM};
+	font-family: ${fontFamilyC};
+}
+.z-chosenbox-txcnt {
+	display: none;
+	font-size: ${fontSizeM};
+	font-family: ${fontFamilyC};
+	white-space: nowrap;
 }
 .z-chosenbox-pp {
 	position: absolute;
