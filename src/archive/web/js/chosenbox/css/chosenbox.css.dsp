@@ -71,7 +71,7 @@
 .z-chosenbox-option {
 	cursor: pointer;
 }
-.z-chosenbox-option-focus {
+.z-chosenbox-option-over {
 	cursor: pointer;
 	background-color: #2626BB;
 }
