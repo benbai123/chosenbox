@@ -107,10 +107,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var s = val.split(','),
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
+			n = options.length,
 			i;
 		for (i = 0; i < s.length; i++) {
 			var index = s[i];
-			if (index < options.length)
+			if (index < n)
 				this._doSelect(options[index], index);
 		}
 	},
@@ -119,7 +120,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
 
-		this.domListen_(inp, 'onKeyDown', '_updateText')
+		this.domListen_(inp, 'onKeyDown', '_updateInputWidth')
 			.domListen_(inp, 'onKeyUp', '_fixDisplay')
 			.domListen_(inp, 'onBlur', 'doBlur_')
 			.domListen_(sel, 'onClick', 'doClick_')
@@ -137,7 +138,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	unbind_: function () {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
-		this.domUnlisten_(inp, 'onKeyDown', '_updateText')
+		this.domUnlisten_(inp, 'onKeyDown', '_updateInputWidth')
 			.domUnlisten_(inp, 'onBlur', 'doBlur_')
 			.domUnlisten_(sel, 'onClick', 'doClick_')
 			.domUnlisten_(sel, 'onMouseOver', 'doMouseOver_')
@@ -223,10 +224,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		delbtn.className = this.getZclass() + '-del-btn';
 		content.appendChild(delbtn);
 		jq(delbtn).bind('click', function () {
-			wgt._doDeselect(content);
+			wgt._doDeselect(content, {sendOnSelect: true});
 		});
 		this.$n('cnt').insertBefore(content, this.$n('inp')); // add div mark
 	},
+	// clear all selected items
 	_clearSelection: function (opts) {
 		var cnt = this.$n('cnt'),
 			c;
@@ -242,6 +244,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			}
 			
 	},
+	// fire On_Select event to server
 	fireOnSelect: function (evt) {
 		var options = jq(this.$n('sel')).children(),
 			selItems = this._selItems,
@@ -259,6 +262,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._doChange(evt);
 		return this.$supers('doBlur_', arguments); 		
 	},
+	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
 		if (this._open) {
 			var wgt = this;
@@ -276,9 +280,9 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._doChange(evt);
 	},
 	_doChange: function (evt) {
-		
+		// TODO: maybe done in others?
 	},
-	_updateText: function (evt) {
+	_updateInputWidth: function (evt) {
 		var inp = evt.domTarget,
 			txcnt = this.$n('txcnt'),
 			wgt = this;
@@ -341,6 +345,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// calculate the width for input field
 	_fixInputWidth: function (inp, txcnt) {
+		var n = this.$n(),
+			hgh = jq(n).height();
 		// copy value to hidden txcnt
 		txcnt.innerHTML = inp.value;
 		// get width from hidden txcnt
@@ -350,6 +356,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			inp.style.width = max + 'px';
 		else
 			inp.style.width = width + 'px';
+		if (jq(n).height() != hgh)
+			this._updatePopupPosition(n, this.$n('pp'));
 		if (this.fixInputWidth) {
 			clearTimeout(this.fixInputWidth);
 			this.fixInputWidth = null;
@@ -357,9 +365,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// filt out not matched item
 	_fixDisplay: function () {
-		var str = this.$n('inp').value;
-
-		var selItems = this._selItems,
+		var str = this.$n('inp').value,
+			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			index, element, eStyle,
 			found = false;
