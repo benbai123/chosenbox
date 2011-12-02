@@ -23,7 +23,7 @@ function (out) {
 			'<div id="', uid, '-sel" class="',zcls,'-sel">');
 	var s = $eval(this.items) || [] ;
 	for (var i = 0, j = s.length; i < j; i++) {
-		out.push('<div class="',zcls,'-option">', s[i], '</div>');
+		out.push('<div class="',zcls,'-option">', zUtl.encodeXML(s[i]), '</div>');
 	}
 	out.push('</div>',
 			'<div id="', uid, '-empty" class="',zcls,'-empty"></div>','</div></div></div>');

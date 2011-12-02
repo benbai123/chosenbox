@@ -1,0 +1,96 @@
+<zk>
+	<zscript>
+		<![CDATA[
+		String[] userName = { new String("Tony"), new String("Ryan"), new String("Jumper"), new String("Wing"), new String("Sam"), new String("Tony"), new String("Ryan"), new String("Jumper"), new String("Wing"), new String("Sam") };
+		ListModelList model = new ListModelList(userName);
+	]]></zscript>
+	<chosenbox model="${model}">
+		<template name="model">Name is ${each}</template>
+	</chosenbox>
+	<chosenbox id="cbx" model="${model}">
+		<attribute name="onSelect">
+			List l = (List)event.getData();
+			System.out.println(l);
+		</attribute>
+		<attribute name="onOpen">
+			System.out.println("Open: " +self.isOpen());
+		</attribute>
+		<template name="model">Name is ${each}</template>
+	</chosenbox>
+	<button label="set item 0 and 2 selected">
+		<attribute name="onClick">
+			List l = new ArrayList();
+			l.add(cbx.getModel().get(0));
+			l.add(cbx.getModel().get(2));
+			cbx.setSelectedItems(l);
+		</attribute>
+	</button>
+	<button label="select first jumper">
+		<attribute name="onClick">
+			cbx.setSelectedIndex(2);
+		</attribute>
+	</button>
+	<button label="select first Wing">
+		<attribute name="onClick">
+			cbx.setSelectedIndex(3);
+		</attribute>
+	</button>
+	<button label="select second jumper">
+		<attribute name="onClick">
+			cbx.setSelectedIndex(7);
+		</attribute>
+	</button>
+	<button label="select second Wing">
+		<attribute name="onClick">
+			cbx.setSelectedIndex(8);
+		</attribute>
+	</button>
+	<absolutelayout>
+		<absolutechildren x="100" y="100">
+			<vbox>
+				<hbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+				</hbox>
+				<vbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+				</vbox>
+				<hbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+				</hbox>
+			</vbox>
+		</absolutechildren>
+		<absolutechildren x="300" y="300">
+			<anchorlayout>
+				<anchorchildren>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+					<chosenbox model="${model}">
+						<template name="model">Name is ${each}</template>
+					</chosenbox>
+				</anchorchildren>
+			</anchorlayout>
+		</absolutechildren>
+	</absolutelayout>
+</zk>

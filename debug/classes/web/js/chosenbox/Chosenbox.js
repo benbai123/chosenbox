@@ -125,8 +125,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			.domListen_(inp, 'onBlur', 'doBlur_')
 			.domListen_(sel, 'onClick', 'doClick_')
 			.domListen_(sel, 'onMouseOver', 'doMouseOver_')
-			.domListen_(sel, 'onMouseOut', 'doMouseOut_')
-			.domListen_(sel, 'onMouseDown', 'doMouseDown_');
+			.domListen_(sel, 'onMouseOut', 'doMouseOut_');
 
 		zWatch.listen({onFloatUp: this});
 
@@ -142,16 +141,9 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			.domUnlisten_(inp, 'onBlur', 'doBlur_')
 			.domUnlisten_(sel, 'onClick', 'doClick_')
 			.domUnlisten_(sel, 'onMouseOver', 'doMouseOver_')
-			.domUnlisten_(sel, 'onMouseOut', 'doMouseOut_')
-			.domUnlisten_(sel, 'onMouseDown', 'doMouseDown_');
+			.domUnlisten_(sel, 'onMouseOut', 'doMouseOut_');
 
-		this._ignoreFloatUp = null;
 		this.$supers(chosenbox.Chosenbox, 'unbind_', arguments);
-	},
-	// set ignoreFloatUp while mousedown to prevent close while onFloatUp
-	doMouseDown_: function (evt) {
-		if (this._open)
-			this._ignoreFloatUp = true;
 	},
 	doMouseOver_: function (evt) {
 		var target = evt.domTarget;
@@ -264,16 +256,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
-		if (this._open) {
-			var wgt = this;
-			setTimeout(function () { // make it do after doMouseDown and check whether _ignoreFloatUp
-				// clear _ignoreFloatUp if mousedown on self
-				if (wgt._ignoreFloatUp)
-					wgt._ignoreFloatUp = null;
-				else
-					wgt.setOpen(false, {sendOnOpen: true}); // close dropdown otherwise
-			}, 1);
-		}
+		if (this._open && (ctl.origin != this))
+			this.setOpen(false, {sendOnOpen: true});
 	},
 	//Bug 1756559: ctrl key shall fore it to be sent first
 	beforeCtrlKeys_: function (evt) {
@@ -302,13 +286,13 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		}
 	},
 	open: function (n, pp, opts) {
-		// move popup under the body
-		document.body.appendChild(pp);
-		// required for setTopmost 
+		zk(pp).makeVParent();
+
+		// required for setTopmost
 		this.setFloating_(true);
 		this.setTopmost();
 		var offset = this._evalOffset(n);
-		
+
 		pp.style.left = offset.left + 'px';
 		pp.style.top = offset.top + jq(n).height() + 'px';
 		pp.style.zIndex = n.style.zIndex;
@@ -320,10 +304,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.fire('onOpen', {open:true});
 	},
 	close: function (pp, opts) {
+		zk(pp).undoVParent();
 		this.setFloating_(false);
 		pp.style.display = 'none';
 		var wgt = this;
-		setTimeout(function () {wgt._restorepp();}, 0);
 
 		if (opts && opts.sendOnOpen)
 			this.fire('onOpen', {open:false});
@@ -396,12 +380,5 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		
 		pp.style.left = offset.left + 'px';
 		pp.style.top = offset.top + jq(this.$n()).height() + 'px';
-	},
-	// move popup node back
-	_restorepp: function () {
-		var n = this.$n(),
-			pp = this.$n('pp');
-		n.appendChild(pp);
-		pp.style.zIndex = n.style.zIndex = 1;
 	}
 });
