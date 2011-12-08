@@ -15,8 +15,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 function (out) {
 	var zcls = this.getZclass(),
 		uid = this.uuid;
-	out.push('<div id="', uid, '" class="',zcls,'">',
-			'<div id="', uid, '-cnt" class="',zcls,'-cnt">',
+	out.push('<i id="', uid, '" class="',zcls,'">',
 			'<input id="', uid, '-inp" class="',zcls,'-inp"></input>',
 			'<div id="', uid, '-txcnt" class="',zcls,'-txcnt"></div>', // hidden field for change input width dynamically
 			'<div id="', uid, '-pp" class="',zcls,'-pp ', zcls,'-pp-hidden">',
@@ -26,5 +25,5 @@ function (out) {
 		out.push('<div class="',zcls,'-option">', zUtl.encodeXML(s[i]), '</div>');
 	}
 	out.push('</div>',
-			'<div id="', uid, '-empty" class="',zcls,'-empty"></div>','</div></div></div>');
+			'<div id="', uid, '-empty" class="',zcls,'-empty"></div>','</div></i>');
 }

@@ -12,6 +12,10 @@ Copyright (C) 2011 Potix Corporation. All Rights Reserved.
 This program is distributed under LGPL Version 3.0 in the hope that
 it will be useful, but WITHOUT ANY WARRANTY.
 */
+(function () {
+	function clearAllData(wgt) {
+
+	}
 chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_width: 300,
 	$init: function () {
@@ -44,7 +48,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 */
 		selectedIndex: function (v, opts) {
 			this._clearSelection();
-			if (this.$n()) {
+			if (this.$n() && v >= 0) {
 				var options = jq(this.$n('sel')).children();
 				if (v < options.length)
 					this._doSelect(options[v], v);
@@ -108,9 +112,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			n = options.length,
+			_index = this._selectedIndex,
 			i;
 		for (i = 0; i < s.length; i++) {
 			var index = s[i];
+			if (_index == -1 || _index >= index)
+				_index = this._selectedIndex = index;
 			if (index < n)
 				this._doSelect(options[index], index);
 		}
@@ -123,26 +130,24 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.domListen_(inp, 'onKeyDown', '_updateInputWidth')
 			.domListen_(inp, 'onKeyUp', '_fixDisplay')
 			.domListen_(inp, 'onBlur', 'doBlur_')
-			.domListen_(sel, 'onClick', 'doClick_')
 			.domListen_(sel, 'onMouseOver', 'doMouseOver_')
 			.domListen_(sel, 'onMouseOut', 'doMouseOut_');
 
 		zWatch.listen({onFloatUp: this});
 
-		var cnt = this.$n('cnt');
+		var n = this.$n();
 
-		this.$n('cnt').style.width = this._width + 'px';
-		this.$n('pp').style.width = cnt.offsetWidth + 'px';
+		n.style.width = this._width + 'px';
+		this.$n('pp').style.width = n.offsetWidth + 'px';
 	},
 	unbind_: function () {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
 		this.domUnlisten_(inp, 'onKeyDown', '_updateInputWidth')
 			.domUnlisten_(inp, 'onBlur', 'doBlur_')
-			.domUnlisten_(sel, 'onClick', 'doClick_')
 			.domUnlisten_(sel, 'onMouseOver', 'doMouseOver_')
 			.domUnlisten_(sel, 'onMouseOut', 'doMouseOut_');
-
+		clearAllData(this);
 		this.$supers(chosenbox.Chosenbox, 'unbind_', arguments);
 	},
 	doMouseOver_: function (evt) {
@@ -164,8 +169,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			var options = jq(this.$n('sel')).children(),
 				index;
 			for (index = 0; index < options.length; index++)
-				if (target == options[index])
+				if (target == options[index]) {
 					this._doSelect(target, index, {sendOnSelect: true});
+					break;
+				}
 			this.setOpen(false, {sendOnOpen: true});
 		} else {
 			if (!this._open) {
@@ -177,14 +184,20 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// select an item
 	_doSelect: function (target, index, opts) {
-		var options = jq(this.$n('sel')).children();
+		var options = jq(this.$n('sel')).children(),
+			_index = this._selectedIndex;
+		if (_index) {
+			if (index < _index || _index == -1)
+				this._selectedIndex = index;
+		} else if (_index != 0)
+			this._selectedIndex = index;
 		if (this._selItems.indexOf(target) == -1) {
 			this._createLabel(target, index);
 			target.style.display = 'none'; // hide selected item
 			// record the selected item so we can detect whether an item is selected easily.
 			this._selItems.push(target);
 			this._setHighlight(target, false); // clear highlight
-			// this._updatePopupPosition(this.$n(), this.$n('pp'));
+			// this._updatePopupPosition();
 
 			if (opts && opts.sendOnSelect)
 				this.fireOnSelect();
@@ -195,14 +208,40 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var element = jq(this.$n('sel')).children()[selectedItem.opt_index];
 		// remove record
 		this._selItems.splice(this._selItems.indexOf(element), 1);
-		// show deselected item
+		// show origin option of deselected item
 		element.style.display = 'block';
-		// remove div mark
+		// remove deselected item mark
 		jq(selectedItem).remove();
-		if (this._open)
-			this.setOpen(false);
+		this._updatePopupPosition();
 		if (opts && opts.sendOnSelect)
 			this.fireOnSelect(); // only fire if active from client
+		if (opts && opts.fixSelectedIndex)
+			this._fixSelectedIndex();
+	},
+	// fix the selected index after deselect an item
+	_fixSelectedIndex: function () {
+		var n = this.$n(),
+			c, // selected item
+			min;
+		if (n)
+			c = n.firstChild;
+			while (c) {
+				var next = c.nextSibling;
+				index = c.opt_index;
+				if (index == 0) {
+					min = 0;
+					break;
+				} else if (index)
+					if (!min || index < min)
+						min = index;
+				else
+					break;
+				c = next;
+			}
+		if (min || min == 0)
+			this._selectedIndex = min;
+		else
+			this._selectedIndex = -1;
 	},
 	// create label for selected item
 	_createLabel: function (target, index) {
@@ -216,25 +255,27 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		delbtn.className = this.getZclass() + '-del-btn';
 		content.appendChild(delbtn);
 		jq(delbtn).bind('click', function () {
-			wgt._doDeselect(content, {sendOnSelect: true});
+			wgt._doDeselect(content, {sendOnSelect: true, fixSelectedIndex: true});
 		});
-		this.$n('cnt').insertBefore(content, this.$n('inp')); // add div mark
+		this.$n().insertBefore(content, this.$n('inp')); // add div mark
 	},
 	// clear all selected items
 	_clearSelection: function (opts) {
-		var cnt = this.$n('cnt'),
-			c;
-		if (cnt)
-			c = cnt.firstChild;
+		var n = this.$n(),
+			c; // selected item
+		if (n)
+			c = n.firstChild;
 			while (c) {
 				var next = c.nextSibling;
-				if (c.opt_index >= 0)
+				index = c.opt_index;
+				if (index || index == 0) {
 					this._doDeselect(c, opts);
+				}
 				else
 					break;
 				c = next;
 			}
-			
+		this._selectedIndex = -1;
 	},
 	// fire On_Select event to server
 	fireOnSelect: function (evt) {
@@ -335,7 +376,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		txcnt.innerHTML = inp.value;
 		// get width from hidden txcnt
 		var width = jq(txcnt).width() + 30,
-			max = jq(this.$n('cnt')).width() - 5;
+			max = jq(this.$n()).width() - 5;
 		if (width > max)
 			inp.style.width = max + 'px';
 		else
@@ -375,10 +416,13 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		} else
 			empty.style.display = 'none';
 	},
-	_updatePopupPosition: function (n, pp) {
-		var offset = this._evalOffset(n, pp);
+	_updatePopupPosition: function () {
+		var n = this.$n(),
+			pp = this.$n('pp'),
+			offset = this._evalOffset(n, pp);
 		
 		pp.style.left = offset.left + 'px';
 		pp.style.top = offset.top + jq(this.$n()).height() + 'px';
 	}
 });
+})();

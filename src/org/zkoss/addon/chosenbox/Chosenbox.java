@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.zkoss.json.JSONArray;
 import org.zkoss.lang.Objects;
+import org.zkoss.zk.ui.UiException;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.OpenEvent;
@@ -44,7 +45,7 @@ import org.zkoss.zul.Selectbox;
  */
 public class Chosenbox extends Selectbox {
 	private List _selIdxs = new ArrayList();
-	private int _selIdx = -1;
+	private int _jsel = -1;
 	private boolean _open;
 	static {
 		addClientEvent(Selectbox.class, Events.ON_SELECT, CE_DUPLICATE_IGNORE|CE_IMPORTANT);
@@ -67,38 +68,70 @@ public class Chosenbox extends Selectbox {
 		return selection;
 	}
 	public void setSelectedItems (List items) {
-		clearSelection();
+		_selIdxs.clear();
 		ListModel<String> lm = this.getModel();
 		final StringBuffer sb = new StringBuffer(80);
-		for (int i = 0; i < lm.getSize(); i++) {
-			for (int j = 0; j < items.size(); j ++)
+		boolean found = false;
+		for (int j = 0; j < items.size(); j ++) {
+			for (int i = 0; i < lm.getSize(); i++)
 				if (lm.getElementAt(i) == items.get(j)) {
+					if (getSelectedIndex() == -1 || getSelectedIndex() > i)
+						_jsel = i;
 					if (sb.length() > 0)
 						sb.append(',');
+					found = true;
 					sb.append(i);
+					_selIdxs.add(i);
+					break;
 				}
+			if (!found)
+				throw new UiException("No such item: " + items.get(j));
+			found = false;
 		}
 		if (sb.length() > 0)
 			smartUpdate("chgSel", sb.toString());
 		sb.setLength(0);
 	}
 	public void setSelectedIndex(int jsel) {
-		if (!_selIdxs.contains(jsel)) {
+		if (jsel >= getModel().getSize())
+			throw new UiException("Out of bound: " + jsel + " while size="
+					+ getModel().getSize());
+		if (jsel <= -1)
+			jsel = -1;
+		_selIdxs.clear();
+		if (jsel < 0) { // unselect all
+			clearSelection();
+		} else if (jsel != _jsel || _selIdxs.size() > 1) {
+			_jsel = jsel;
 			_selIdxs.add(jsel);
-			Collections.sort(_selIdxs);
+			smartUpdate("selectedIndex", jsel);
 		}
-		super.setSelectedIndex(jsel);
+	}
+	/**
+	 * Returns the index of the selected item (-1 if no one is selected).
+	 */
+	public int getSelectedIndex() {
+		return _jsel;
 	}
 	public void clearSelection() {
 		_selIdxs.clear();
+		_jsel = -1;
+		smartUpdate("selectedIndex", -1);
 	}
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
 		if (cmd.equals(Events.ON_SELECT)) {
 			List selIdxs = (List)request.getData().get("");
-			clearSelection();
-			for (int i = 0; i < selIdxs.size();i ++)
-				_selIdxs.add(Integer.valueOf((String)selIdxs.get(i)));
+			if (selIdxs.size() == 0) {
+				_selIdxs.clear();
+				_jsel = -1;
+			} else {
+				_selIdxs.clear();
+				if (selIdxs.size() > 0)
+					_jsel = Integer.valueOf((String)selIdxs.get(0));
+				for (int i = 0; i < selIdxs.size();i ++)
+					_selIdxs.add(Integer.valueOf((String)selIdxs.get(i)));
+			}
 			Events.postEvent(new Event(Events.ON_SELECT, this, selIdxs));
 		} else if (cmd.equals(Events.ON_OPEN)) {
 			_open = (Boolean)request.getData().get("open");

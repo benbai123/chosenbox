@@ -10,14 +10,6 @@
 	</c:if>
 	border: 1px solid #CCCCCC;
 }
-.z-chosenbox-cnt {
-	zoom: 1;
-	padding: 3px;
-	<c:if test="${zk.ie < 8}">
-		position: relative;
-	</c:if>
-	overflow: hidden;
-}
 .z-chosenbox-sel-item {
 	border: 1px solid #CCCCCC;
 	display: inline-block;
