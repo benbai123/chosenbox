@@ -245,19 +245,22 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// create label for selected item
 	_createLabel: function (target, index) {
-		var content = document.createElement("div"),
+		var span = document.createElement("span"),
+			content = document.createElement("div"),
 			delbtn = document.createElement("div"),
 			wgt = this;
+		span.opt_index = index; // save the index
+		span.className = this.getZclass() + '-sel-item';
 		content.innerHTML = target.innerHTML;
-		content.className = this.getZclass() + '-sel-item';
-		content.opt_index = index; // save the index
-		delbtn.innerHTML = 'X';
+		content.className = this.getZclass() + '-sel-item-cnt';
 		delbtn.className = this.getZclass() + '-del-btn';
-		content.appendChild(delbtn);
+		
+		span.appendChild(content);
+		span.appendChild(delbtn);
 		jq(delbtn).bind('click', function () {
-			wgt._doDeselect(content, {sendOnSelect: true, fixSelectedIndex: true});
+			wgt._doDeselect(span, {sendOnSelect: true, fixSelectedIndex: true});
 		});
-		this.$n().insertBefore(content, this.$n('inp')); // add div mark
+		this.$n().insertBefore(span, this.$n('inp')); // add div mark
 	},
 	// clear all selected items
 	_clearSelection: function (opts) {
