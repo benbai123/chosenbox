@@ -16,6 +16,7 @@ Copyright (C) 2011 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.addon.chosenbox;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -47,6 +48,7 @@ public class Chosenbox extends Selectbox {
 	private List _selIdxs = new ArrayList();
 	private int _jsel = -1;
 	private boolean _open;
+	private String _message;
 	static {
 		addClientEvent(Selectbox.class, Events.ON_SELECT, CE_DUPLICATE_IGNORE|CE_IMPORTANT);
 		addClientEvent(Selectbox.class, Events.ON_FOCUS, CE_DUPLICATE_IGNORE);
@@ -58,6 +60,16 @@ public class Chosenbox extends Selectbox {
 	}
 	public boolean isOpen() {
 		return _open;
+	}
+	public void setMessage(String message) {
+		if (message == null) message = "";
+		if (!Objects.equals(_message, message)) {
+			_message = message;
+			smartUpdate("message", getMessage());
+		}
+	}
+	public String getMessage() {
+		return _message;
 	}
 	public List getSelectedItems () {
 		List selection = new ArrayList();
@@ -117,6 +129,11 @@ public class Chosenbox extends Selectbox {
 		_selIdxs.clear();
 		_jsel = -1;
 		smartUpdate("selectedIndex", -1);
+	}
+	protected void renderProperties(org.zkoss.zk.ui.sys.ContentRenderer renderer)
+	throws IOException {
+		super.renderProperties(renderer);
+		render(renderer, "message", getMessage());
 	}
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();

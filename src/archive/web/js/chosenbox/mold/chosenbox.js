@@ -14,9 +14,12 @@ it will be useful, but WITHOUT ANY WARRANTY.
 */
 function (out) {
 	var zcls = this.getZclass(),
-		uid = this.uuid;
+		uid = this.uuid,
+		message = this.getMessage(),
+		value;
+	value = message? ' value="'+zUtl.encodeXML(message)+'"' : '';
 	out.push('<i id="', uid, '" class="',zcls,'">',
-			'<input id="', uid, '-inp" class="',zcls,'-inp"></input>',
+			'<input id="', uid, '-inp" class="',zcls,'-inp"', value, '></input>',
 			'<div id="', uid, '-txcnt" class="',zcls,'-txcnt"></div>', // hidden field for change input width dynamically
 			'<div id="', uid, '-pp" class="',zcls,'-pp ', zcls,'-pp-hidden">',
 			'<div id="', uid, '-sel" class="',zcls,'-sel">');

@@ -12,11 +12,15 @@
 
 	display:-moz-inline-box;
 	display: inline-block;
-	zoom: 1;
+	overflow: hidden;
 	<c:if test="${zk.ie < 8}">
+		zoom: 1;
 		display: inline;
 	</c:if>
 	border: 1px solid #CCCCCC;
+}
+.z-chosenbox-sel {
+	padding-bottom: 3px;
 }
 .z-chosenbox-sel-item {
 	-webkit-border-radius: 3px;
@@ -97,28 +101,28 @@
 .z-chosenbox-pp {
 	position: absolute;
 	background-color: #FFFFFF;
-	border: 0 none;
+	border: 1px solid #CCCCCC;
+	border-top: 0;
 	font-family: ${fontFamilyC};
 	font-size: ${fontSizeM};
 	font-weight: normal;
 	margin:0;
 	overflow:hidden;
-	padding-top: 2px;
 
-	-moz-box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.35);
-	-moz-border-radius: 1px 1px 1px 1px;
-	<c:if test="${zk.ie < 8}">
-		border: 1px solid #CCCCCC;
-	</c:if>
+	-webkit-box-shadow: 0 4px 5px rgba(0,0,0,.15);
+	-moz-box-shadow   : 0 4px 5px rgba(0,0,0,.15);
+	-o-box-shadow     : 0 4px 5px rgba(0,0,0,.15);
+	box-shadow        : 0 4px 5px rgba(0,0,0,.15);
 }
 
 .z-chosenbox-pp-hidden {
 	display: none;
 }
-.z-chosenbox-option {
+.z-chosenbox-option, .z-chosenbox-option-over {
 	cursor: pointer;
+	padding-top: 3px;
+	padding-left: 10px;
 }
 .z-chosenbox-option-over {
-	cursor: pointer;
-	background-color: #2626BB;
+	background-color: #3875D7;
 }

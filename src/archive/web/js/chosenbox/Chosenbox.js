@@ -99,7 +99,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			// TODO: handle name, or maybe not need?
 			//var n = this.$n('sel');
 			//if (n) n.name = name;
-		}
+		},
+		message: null
 	},
 	getZclass: function () {
 		var zcls = this._zclass;
@@ -127,9 +128,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
 
-		this.domListen_(inp, 'onKeyDown', '_updateInputWidth')
-			.domListen_(inp, 'onKeyUp', '_fixDisplay')
-			.domListen_(inp, 'onBlur', 'doBlur_')
+		this.domListen_(inp, 'onBlur', 'doBlur_')
 			.domListen_(sel, 'onMouseOver', 'doMouseOver_')
 			.domListen_(sel, 'onMouseOut', 'doMouseOut_');
 
@@ -138,13 +137,13 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var n = this.$n();
 
 		n.style.width = this._width + 'px';
-		this.$n('pp').style.width = n.offsetWidth + 'px';
+		this.$n('pp').style.width = jq(n).width() + 'px';
+		this._fixInputWidth(inp, this.$n('txcnt'));
 	},
 	unbind_: function () {
 		var inp = this.$n('inp'),
 			sel = this.$n('sel');
-		this.domUnlisten_(inp, 'onKeyDown', '_updateInputWidth')
-			.domUnlisten_(inp, 'onBlur', 'doBlur_')
+		this.domUnlisten_(inp, 'onBlur', 'doBlur_')
 			.domUnlisten_(sel, 'onMouseOver', 'doMouseOver_')
 			.domUnlisten_(sel, 'onMouseOut', 'doMouseOut_');
 		clearAllData(this);
@@ -161,7 +160,60 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this._setHighlight(target, false);
 	},
 	_setHighlight: function (target, highlight) {
-		target.className = this.getZclass() + (highlight? '-option-over' : '-option');
+		var zcls = this.getZclass();
+		if (highlight) {
+			// clear old first
+			var oldHlite = jq(this.$n('sel')).find('.'+zcls+'-option-over')[0];
+			if (oldHlite)
+				oldHlite.className = zcls + '-option';
+			target.className = zcls + '-option-over';
+		} else
+			target.className = zcls + '-option';
+	},
+	// focus previous visible option
+	_focusPrevious: function () {
+		var oldHlite = jq(this.$n('sel')).find('.'+this.getZclass()+'-option-over')[0],
+			previous = oldHlite? oldHlite.previousSibling : null;
+		// find previous closest visible sibling
+		while (previous && previous.style.display == 'none')
+			previous = previous.previousSibling;
+		if (previous)
+			this._setHighlight(previous, true);
+		else if (oldHlite)
+			this._setHighlight(oldHlite, false);
+	},
+	// focus next visible option
+	_focusNext: function () {
+		var $sel = jq(this.$n('sel')),
+			oldHlite = $sel.find('.'+this.getZclass()+'-option-over')[0],
+			next;
+		if (!this._open)
+			this.setOpen(true, {sendOnOpen: true});
+		else {
+			next = oldHlite? oldHlite.nextSibling : $sel[0].firstChild;
+			// find next closest visible sibling
+			while (next && next.style.display == 'none')
+				next = next.nextSibling;
+			if (next)
+				this._setHighlight(next, true);
+		}
+			
+	},
+	_doEnterPressed: function () {
+		var $sel = jq(this.$n('sel')),
+			oldHlite;
+		if (this._open
+				&& (oldHlite = $sel.find('.'+this.getZclass()+'-option-over')[0])) {
+			var options = $sel.children(),
+				index;
+			for (index = 0; index < options.length; index++)
+				if (oldHlite == options[index]) {
+					this._doSelect(oldHlite, index, {sendOnSelect: true});
+					this.setOpen(false, {sendOnOpen: true});
+					this.clearInput();
+					break;
+				}
+		}
 	},
 	doClick_: function (evt) {
 		var target = evt.domTarget;
@@ -174,10 +226,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					break;
 				}
 			this.setOpen(false, {sendOnOpen: true});
+			this.clearInput();
 		} else {
-			if (!this._open) {
+			if (!this._open)
 				this.setOpen(true, {sendOnOpen: true});
-			}
 		}
 		this.$n('inp').focus();
 		this.$supers('doClick_', arguments);
@@ -300,8 +352,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
-		if (this._open && (ctl.origin != this))
+		if (this._open && (ctl.origin != this)) {
 			this.setOpen(false, {sendOnOpen: true});
+			this.clearInput();
+		}
 	},
 	//Bug 1756559: ctrl key shall fore it to be sent first
 	beforeCtrlKeys_: function (evt) {
@@ -310,11 +364,33 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_doChange: function (evt) {
 		// TODO: maybe done in others?
 	},
-	_updateInputWidth: function (evt) {
-		var inp = evt.domTarget,
+	doKeyDown_: function (evt) {
+		var keyCode = evt.keyCode;
+		switch (keyCode) {
+			case 38://up
+				this._focusPrevious();
+				break;
+			case 40://down
+				this._focusNext();
+				break;
+			case 13://enter
+				this._doEnterPressed();
+				break;
+			default:
+				this._updateInput(evt);
+		}
+	},
+	doKeyUp_: function (evt) {
+		this._fixInputWidth(this.$n('inp'), this.$n('txcnt'));
+		this._fixDisplay();
+	},
+	_updateInput: function (evt) {
+		var inp = evt? evt.domTarget : this.$n('inp'),
 			txcnt = this.$n('txcnt'),
 			wgt = this;
 
+		if (!this._open)
+			this.setOpen(true, {sendOnOpen: true});
 		if (!this.fixInputWidth) // check every 100ms while input
 			this.fixInputWidth = setTimeout(function () { // do after event
 				wgt._fixInputWidth(inp, txcnt)
@@ -323,11 +399,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	setOpen: function (open, opts) {
 		this._open = open;
 		var pp = this.$n('pp');
-		if (open) {
+		if (open)
 			this.open(this.$n(), pp, opts);
-		} else {
+		else
 			this.close(pp, opts);
-		}
 	},
 	open: function (n, pp, opts) {
 		zk(pp).makeVParent();
@@ -338,10 +413,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var offset = this._evalOffset(n);
 
 		pp.style.left = offset.left + 'px';
-		pp.style.top = offset.top + jq(n).height() + 'px';
+		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 		pp.style.zIndex = n.style.zIndex;
 
-		this._fixDisplay();
+		this._fixDisplay({hliteFirst: true});
 		zk(pp).slideDown(this);
 
 		if (opts && opts.sendOnOpen)
@@ -355,6 +430,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 
 		if (opts && opts.sendOnOpen)
 			this.fire('onOpen', {open:false});
+	},
+	clearInput: function () {
+		var inp = this.$n('inp');
+		inp.value = '';
+		inp.style.width = '30px';
 	},
 	// calculate the left and top for drop-down list
 	_evalOffset: function (n) {
@@ -379,38 +459,40 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		txcnt.innerHTML = inp.value;
 		// get width from hidden txcnt
 		var width = jq(txcnt).width() + 30,
-			max = jq(this.$n()).width() - 5;
+			max = this._width - 10;
 		if (width > max)
 			inp.style.width = max + 'px';
 		else
 			inp.style.width = width + 'px';
 		if (jq(n).height() != hgh)
 			this._updatePopupPosition(n, this.$n('pp'));
-		if (this.fixInputWidth) {
-			clearTimeout(this.fixInputWidth);
-			this.fixInputWidth = null;
-		}
+		clearTimeout(this.fixInputWidth);
+		this.fixInputWidth = null;
 	},
 	// filt out not matched item
-	_fixDisplay: function () {
+	_fixDisplay: function (opts) {
 		var str = this.$n('inp').value,
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			index, element, eStyle,
 			found = false;
-
+		str = str? str.trim() : '';
 		// iterate through item list
 		for (index = 0, element = options[index];
 			index < options.length;
 			index ++, element = options[index])
 			if (selItems.indexOf(element) < 0) { // not process selected items
 				eStyle = element.style;
-				if (str != '' && !element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))
-					eStyle.display = 'none'; // hide if has input and not match
-				else {
+				if ((str || str == '')
+						&& (str == this._message || element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))) {
+					if (!found && opts && opts.hliteFirst) {
+						this._setHighlight(element, true);
+					}
 					eStyle.display = 'block'; // show otherwise
 					found = true;
 				}
+				else
+					eStyle.display = 'none'; // hide if has input and not match
 			}
 		var empty = this.$n('empty');
 		if (!found) { // show empty message if not found anything
@@ -425,7 +507,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			offset = this._evalOffset(n, pp);
 		
 		pp.style.left = offset.left + 'px';
-		pp.style.top = offset.top + jq(this.$n()).height() + 'px';
+		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 	}
 });
 })();
