@@ -19,6 +19,9 @@
 	</c:if>
 	border: 1px solid #CCCCCC;
 }
+.z-chosenbox-focus {
+	border: 1px solid #5897fb;
+}
 .z-chosenbox-sel {
 	padding-bottom: 3px;
 }
@@ -55,6 +58,9 @@
 	<c:if test="${zk.ie < 8}">
 		display: inline;
 	</c:if>
+}
+.z-chosenbox-sel-item-focus {
+	background: #d4d4d4;
 }
 .z-chosenbox-del-btn {
 	width: 12px;

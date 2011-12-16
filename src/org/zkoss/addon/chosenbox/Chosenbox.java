@@ -104,6 +104,18 @@ public class Chosenbox extends Selectbox {
 			smartUpdate("chgSel", sb.toString());
 		sb.setLength(0);
 	}
+	private String getChgSel() {
+		final StringBuffer sb = new StringBuffer(80);
+		String s = null;
+		for (Object o : _selIdxs) {
+			if (sb.length() > 0)
+				sb.append(',');
+			sb.append(o);
+		}
+		s = sb.toString();
+		sb.setLength(0);
+		return s;
+	}
 	public void setSelectedIndex(int jsel) {
 		if (jsel >= getModel().getSize())
 			throw new UiException("Out of bound: " + jsel + " while size="
@@ -134,6 +146,10 @@ public class Chosenbox extends Selectbox {
 	throws IOException {
 		super.renderProperties(renderer);
 		render(renderer, "message", getMessage());
+		renderer.render("selectedIndex", _jsel);
+		if (_selIdxs.size() > 0) {
+			render(renderer, "chgSel", getChgSel());
+		}
 	}
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
@@ -143,11 +159,16 @@ public class Chosenbox extends Selectbox {
 				_selIdxs.clear();
 				_jsel = -1;
 			} else {
+				int idx = 0;
 				_selIdxs.clear();
 				if (selIdxs.size() > 0)
 					_jsel = Integer.valueOf((String)selIdxs.get(0));
-				for (int i = 0; i < selIdxs.size();i ++)
-					_selIdxs.add(Integer.valueOf((String)selIdxs.get(i)));
+				for (int i = 0; i < selIdxs.size();i ++) {
+					idx = Integer.valueOf((String)selIdxs.get(i));
+					if (idx < _jsel)
+						_jsel = idx;
+					_selIdxs.add(idx);
+				}
 			}
 			Events.postEvent(new Event(Events.ON_SELECT, this, selIdxs));
 		} else if (cmd.equals(Events.ON_OPEN)) {
