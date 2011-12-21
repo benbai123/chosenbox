@@ -124,7 +124,7 @@
 .z-chosenbox-pp-hidden {
 	display: none;
 }
-.z-chosenbox-option, .z-chosenbox-option-over {
+.z-chosenbox-option {
 	cursor: pointer;
 	padding-top: 3px;
 	padding-left: 10px;

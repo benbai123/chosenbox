@@ -51,8 +51,6 @@ public class Chosenbox extends Selectbox {
 	private String _message;
 	static {
 		addClientEvent(Selectbox.class, Events.ON_SELECT, CE_DUPLICATE_IGNORE|CE_IMPORTANT);
-		addClientEvent(Selectbox.class, Events.ON_FOCUS, CE_DUPLICATE_IGNORE);
-		addClientEvent(Selectbox.class, Events.ON_BLUR, CE_DUPLICATE_IGNORE);
 		addClientEvent(Chosenbox.class, Events.ON_OPEN, CE_IMPORTANT);
 	}
 	public String getZclass() {
@@ -62,7 +60,8 @@ public class Chosenbox extends Selectbox {
 		return _open;
 	}
 	public void setMessage(String message) {
-		if (message == null) message = "";
+		if (message == null)
+			message = "";
 		if (!Objects.equals(_message, message)) {
 			_message = message;
 			smartUpdate("message", getMessage());
@@ -122,10 +121,10 @@ public class Chosenbox extends Selectbox {
 					+ getModel().getSize());
 		if (jsel <= -1)
 			jsel = -1;
-		_selIdxs.clear();
 		if (jsel < 0) { // unselect all
 			clearSelection();
 		} else if (jsel != _jsel || _selIdxs.size() > 1) {
+			_selIdxs.clear();
 			_jsel = jsel;
 			_selIdxs.add(jsel);
 			smartUpdate("selectedIndex", jsel);
@@ -155,15 +154,14 @@ public class Chosenbox extends Selectbox {
 		final String cmd = request.getCommand();
 		if (cmd.equals(Events.ON_SELECT)) {
 			List selIdxs = (List)request.getData().get("");
+			_selIdxs.clear();
 			if (selIdxs.size() == 0) {
-				_selIdxs.clear();
 				_jsel = -1;
 			} else {
-				int idx = 0;
-				_selIdxs.clear();
-				if (selIdxs.size() > 0)
-					_jsel = Integer.valueOf((String)selIdxs.get(0));
-				for (int i = 0; i < selIdxs.size();i ++) {
+				int idx = Integer.valueOf((String)selIdxs.get(0));
+				_jsel = idx;
+				_selIdxs.add(idx);
+				for (int i = 1; i < selIdxs.size();i ++) {
 					idx = Integer.valueOf((String)selIdxs.get(i));
 					if (idx < _jsel)
 						_jsel = idx;
