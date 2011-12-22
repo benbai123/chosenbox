@@ -436,22 +436,17 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	// fire On_Select event to server
 	fireOnSelect: function (evt) {
 		var n = this.$n(),
-			c,
+			c, // selected item
 			next,
 			data = [],
-			index; // selected item
+			index;
 		if (n)
 			c = n.firstChild;
-			while (c) {
-				next = c.nextSibling;
-				index = c.opt_index;
-				if (index || index == 0)
-					data.push(index+'');
-				else
-					break;
-				c = next;
+		while (c && ((index = c.opt_index) || index == 0)) {
+			data.push(index+'');
+			c = c.nextSibling;
 		}
-			this.fire('onSelect', data);
+		this.fire('onSelect', data);
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
@@ -466,12 +461,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._doChange(evt);
 	},
 	doKeyDown_: function (evt) {
-		var keyCode = evt.keyCode,
-			clearLabelFocus = true;
+		var keyCode = evt.keyCode;
 		switch (keyCode) {
 			case 8://backspace
 				this._deleteLabel('backspace', evt);
-				clearLabelFocus = false;
 				break;
 			case 13://enter processed in key up only
 				break;
@@ -479,26 +472,23 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				break;
 			case 37://left
 				this._doArrowDown('left', evt);
-				clearLabelFocus = false;
 				break;
 			case 38://up
 				this._doArrowDown('up');
 				break;
 			case 39://right
 				this._doArrowDown('right', evt);
-				clearLabelFocus = false;
 				break;
 			case 40://down
 				this._doArrowDown('down');
 				break;
 			case 46://del
 				this._deleteLabel('del', evt);
-				clearLabelFocus = false;
 				break;
 			default:
 				this._updateInput(evt);
 		}
-		if (clearLabelFocus)
+		if (!(keyCode == 39 || keyCode == 46 || keyCode == 8 || keyCode == 37))
 			this._removeLabelFocus();
 	},
 	doKeyUp_: function (evt) {
@@ -526,7 +516,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.setOpen(true, {sendOnOpen: true});
 		// check every 100ms while input
 		if (!this.fixInputWidth)
-			this.fixInputWidth = setTimeout(function () { // do after event
+			this.fixInputWidth = setTimeout(function () {
 				wgt._fixInputWidth()
 			}, 100);
 	},
@@ -586,19 +576,19 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var n = this.$n(),
 			inp = this.$n('inp'),
 			txcnt = this.$n('txcnt'),
-			hgh = jq(n).height(),
+			oldh = jq(n).height(),
 			width,
-			max;
+			max = parseInt(this._width) - 10;
 		// copy value to hidden txcnt
 		txcnt.innerHTML = inp.value;
 		// get width from hidden txcnt
 		width = jq(txcnt).width() + 30;
-		max = parseInt(this._width) - 10;
+
 		if (width > max)
 			inp.style.width = max + 'px';
 		else
 			inp.style.width = width + 'px';
-		if (jq(n).height() != hgh)
+		if (jq(n).height() != oldh)
 			this._updatePopupPosition(n, this.$n('pp'));
 		if (this.fixInputWidth)
 			clearTimeout(this.fixInputWidth);
@@ -611,25 +601,26 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			index, element, eStyle,
-			found = false;
+			found = false,
+			showAll;
 		str = str? str.trim() : '';
+		showAll = str && str == this._message || str == ''; 
 		// iterate through item list
 		for (index = 0, element = options[index];
 			index < options.length;
-			index ++, element = options[index])
-			if (selItems.indexOf(element) < 0) { // not process selected items
+			index ++, element = options[index]) {
+			if (selItems.indexOf(element) < 0) {
 				eStyle = element.style;
-				if ((str || str == '')
-						&& (str == this._message || element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))) {
-					if (!found && opts && opts.hliteFirst) {
+				if (showAll || str && element.innerHTML.toLowerCase().startsWith(str.toLowerCase())) {
+					if (!found && opts && opts.hliteFirst)
 						this._hliteOpt(element, true);
-					}
-					eStyle.display = 'block'; // show otherwise
+					eStyle.display = 'block';
 					found = true;
 				}
 				else
 					eStyle.display = 'none'; // hide if has input and not match
 			}
+		}
 		if (!found) { // show empty message if not found anything
 			empty.innerHTML = 'no result match your input - ' + str;
 			empty.style.display = 'block';
@@ -649,7 +640,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var inp = this.$n('inp');
 		inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getMessage()) : '';
 		this._fixInputWidth();
-		this._fixDisplay();
+		if (this._open)
+			this._fixDisplay();
 	},
 	domAttrs_: function () {
 		var v;
