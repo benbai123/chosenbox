@@ -1,0 +1,33 @@
+#surefire
+#Fri Dec 23 16:55:15 CST 2011
+testClassesDirectory=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\target\\lib\\test-classes
+classPathUrl.4=C\:\\Users\\ben\\.m2\\repository\\org\\zkoss\\common\\zel\\2.2.1\\zel-2.2.1.jar
+classPathUrl.3=C\:\\Users\\ben\\.m2\\repository\\commons-fileupload\\commons-fileupload\\1.2.1\\commons-fileupload-1.2.1.jar
+classPathUrl.2=C\:\\Users\\ben\\.m2\\repository\\org\\zkoss\\common\\zcommon\\6.0.0-SNAPSHOT\\zcommon-6.0.0-SNAPSHOT.jar
+useManifestOnlyJar=true
+classPathUrl.1=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\debug\\classes
+reportsDirectory=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\target\\lib\\surefire-reports
+classPathUrl.0=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\target\\lib\\test-classes
+dirscanner.0=directoryScannerOptions
+providerConfiguration=org.apache.maven.surefire.junit.JUnit3Provider
+testSuiteDefinitionTestSourceDirectory=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\src\\test\\java
+surefireClassPathUrl.1=C\:\\Users\\ben\\.m2\\repository\\org\\apache\\maven\\surefire\\surefire-api\\2.7.1\\surefire-api-2.7.1.jar
+surefireClassPathUrl.0=C\:\\Users\\ben\\.m2\\repository\\org\\apache\\maven\\surefire\\surefire-junit3\\2.7.1\\surefire-junit3-2.7.1.jar
+report.2=org.apache.maven.surefire.report.XMLReporter
+useSystemClassLoader=true
+report.1=org.apache.maven.surefire.report.BriefFileReporter
+report.0=org.apache.maven.surefire.report.ForkingConsoleReporter
+excludes0=**/*$*
+isTrimStackTrace=true
+dirscanner.0.params=D\:\\work\\ZK6\\personal_research\\chosen\\chosenbox\\target\\lib\\test-classes|[**/Test*.java, **/*Test.java, **/*TestCase.java]|[**/*$*]
+includes2=**/*TestCase.java
+enableAssertions=true
+includes1=**/*Test.java
+failIfNoTests=false
+includes0=**/Test*.java
+dirscanner.0.types=java.io.File|java.util.ArrayList|java.util.ArrayList
+classPathUrl.8=C\:\\Users\\ben\\.m2\\repository\\org\\zkoss\\zk\\zk\\6.0.0-SNAPSHOT\\zk-6.0.0-SNAPSHOT.jar
+classPathUrl.7=C\:\\Users\\ben\\.m2\\repository\\org\\zkoss\\zk\\zul\\6.0.0-SNAPSHOT\\zul-6.0.0-SNAPSHOT.jar
+childDelegation=false
+classPathUrl.6=C\:\\Users\\ben\\.m2\\repository\\org\\zkoss\\common\\zweb\\6.0.0-SNAPSHOT\\zweb-6.0.0-SNAPSHOT.jar
+classPathUrl.5=C\:\\Users\\ben\\.m2\\repository\\org\\beanshell\\bsh\\2.0b4\\bsh-2.0b4.jar
