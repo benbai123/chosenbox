@@ -15,7 +15,14 @@ it will be useful, but WITHOUT ANY WARRANTY.
 (function () {
 	function clearAllData(wgt) {
 		wgt._clearSelection();
-		wgt._chgSel = wgt.fixInputWidth = null;
+		wgt._startOnChange = wgt._chgSel = wgt.fixInputWidth = null;
+	}
+	function startOnChange(wgt) {
+		if (!wgt._startOnChange)
+			wgt._startOnChange = setTimeout(function () {
+				wgt._fireOnChange(wgt.$n(('inp')).value);
+				wgt._startOnChange = null;
+			}, 350);
 	}
 chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_width: '300px',
@@ -107,7 +114,27 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 * Sets the default message.
 		 * @param String message
 		 */
-		message: null
+		message: null,
+		/**
+		 * Returns whether can create new item,
+		 * The input will considered to be a new item if it is not exist and this property is true.
+		 * @return boolean
+		 */
+		/**
+		 * Sets whether can create new item.
+		 * @param boolean creatable
+		 */
+		creatable: null,
+		/**
+		 * Returns the open status of  drop down list.
+		 * @return boolean
+		 */
+		/**
+		 * Sets the drop down list open status,
+		 * and open/close drop down list as need.
+		 * @param boolean open
+		 */
+		open: null
 	},
 	getZclass: function () {
 		var zcls = this._zclass;
@@ -147,13 +174,15 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 
 		n.style.width = this._width;
 		this.$n('pp').style.width = jq(n).width() + 'px';
-		// fit input width to its value
-		this._fixInputWidth();
 		// fix selecte status
 		if (chgSel) {
 			this.setChgSel(chgSel);
 			this._chgSel = null;
 		}
+		// fix message
+		this._fixMessage(true);
+		if (this._open && !this.isDisabled())
+			this.setOpen(true);
 	},
 	unbind_: function () {
 		var inp = this.$n('inp');
@@ -165,10 +194,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	doBlur_: function (evt) {
 		jq(this.$n()).removeClass(this.getZclass() + '-focus');
-		this._fixMessage();
 	},
 	doFocus_: function (evt) {
-		jq(this.$n()).addClass(this.getZclass() + '-focus');
+		if (!this.isDisabled())
+			jq(this.$n()).addClass(this.getZclass() + '-focus');
 	},
 	doMouseOver_: function (evt) {
 		var target = evt.domTarget;
@@ -277,7 +306,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (label = jq(this.$n()).find('.' + zcls)[0]) {
 				var dir = (label.previousSibling && key == 'backspace')? 'prev' : 'next';
 				this._moveLabelFocus(label, dir);
-				this._doDeselect(label, {sendOnSelect: true, fixSelectedIndex: true});
+				this._doDeselect(label, {sendOnDelete: true, fixSelectedIndex: true});
 				evt.stop(); // should stop or will delete text
 				// maybe have to filt out deselected item
 				this._fixDisplay();
@@ -296,24 +325,31 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_doEnterPressed: function () {
 		var $sel,
 			hlited;
-		if (this._open && ($sel = jq(this.$n('sel')))
-			&& (hlited = $sel.find('.'+this.getZclass()+'-option-over')[0])) {
-			var options = $sel.children(),
-				index;
-			for (index = 0; index < options.length; index++)
-				if (hlited == options[index]) {
-					this._doSelect(hlited, index, {sendOnSelect: true});
-					this.setOpen(false, {sendOnOpen: true});
-					break;
-				}
+		if (this._open) {
+			if ((hlited = this.$n('empty')) && jq(hlited).hasClass(this.getZclass() + '-empty-creatable')) {
+				this._fireOnChange(this.$n('inp').value, {create: true});
+				this.setOpen(false, {sendOnOpen: true, fixMessage: true});
+			} else if (($sel = jq(this.$n('sel')))
+					&& (hlited = $sel.find('.'+this.getZclass()+'-option-over')[0])) {
+				var options = $sel.children(),
+					index;
+				for (index = 0; index < options.length; index++)
+					if (hlited == options[index]) {
+						this._doSelect(hlited, index, {sendOnSelect: true});
+						this.setOpen(false, {sendOnOpen: true, fixMessage: true});
+						break;
+					}
+			}
 		}
 	},
 	doClick_: function (evt) {
+		if (this.isDisabled()) return;
 		this._removeLabelFocus();
 		var target = evt.domTarget,
 			inp = this.$n('inp'),
+			zcls = this.getZclass(),
 			clsnm = target.className;
-		if (clsnm.indexOf('option') > 0) { // click on option
+		if (clsnm.startsWith(zcls+'-option') > 0) { // click on option
 			var options = jq(this.$n('sel')).children(),
 				index;
 			for (index = 0; index < options.length; index++)
@@ -321,10 +357,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					this._doSelect(target, index, {sendOnSelect: true});
 					break;
 				}
-			this.setOpen(false, {sendOnOpen: true});
+			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
+		} else if (clsnm.indexOf('empty-creatable') > 0) { // click on new label
+			this._fireOnChange(inp.value, {create: true});
+			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
 		} else {
-			// click on label
-			if (clsnm.indexOf('sel-item') > 0) {
+			if (clsnm.indexOf('sel-item') > 0) { // click on label
 				var label = target,
 					$label = jq(label),
 					zcls = this.getZclass() + '-sel-item';
@@ -355,12 +393,13 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this._fixMessage();
 
 			if (opts && opts.sendOnSelect)
-				this.fireOnSelect();
+				this.fireSelectEvent('onSelect', index);
 		}
 	},
 	// deselect an item
 	_doDeselect: function (selectedItem, opts) {
-		var element = jq(this.$n('sel')).children()[selectedItem.opt_index],
+		var index = selectedItem.opt_index,
+			element = jq(this.$n('sel')).children()[index],
 			_selItems = this._selItems;
 		// remove record
 		_selItems.splice(_selItems.indexOf(element), 1);
@@ -370,8 +409,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		// remove label of deselected item
 		jq(selectedItem).remove();
 		this._updatePopupPosition();
-		if (opts && opts.sendOnSelect)
-			this.fireOnSelect(); // only fire if active from client
+		if (opts && opts.sendOnDelete)
+			this.fireSelectEvent('onDelete', index); // only fire if active from client
 		if (opts && opts.fixSelectedIndex)
 			this._fixSelectedIndex();
 	},
@@ -408,8 +447,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		span.appendChild(content);
 		span.appendChild(delbtn);
 		jq(delbtn).bind('click', function () {
-			wgt.$n('inp').focus();
-			wgt._doDeselect(span, {sendOnSelect: true, fixSelectedIndex: true});
+			if (!wgt.isDisabled()) {
+				wgt.$n('inp').focus();
+				wgt._doDeselect(span, {sendOnDelete: true, fixSelectedIndex: true});
+			}
 		});
 		this.$n().insertBefore(span, this.$n('inp')); // add div mark
 	},
@@ -433,27 +474,28 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._selItems.length = 0;
 		this._selectedIndex = -1;
 	},
-	// fire On_Select event to server
-	fireOnSelect: function (evt) {
-		var n = this.$n(),
-			c, // selected item
-			next,
-			data = [],
-			index;
-		if (n)
-			c = n.firstChild;
-		while (c && ((index = c.opt_index) || index == 0)) {
-			data.push(index+'');
-			c = c.nextSibling;
-		}
-		this.fire('onSelect', data);
+	// fire onSelect or onDelete event to server
+	fireSelectEvent: function (evt, index) {
+		var	data = [];
+		data.push(index);
+		this.fire(evt, data);
+	},
+	// fire onChange event
+	_fireOnChange: function (value, opts) {
+		var	data = [];
+		data.push(value);
+		if (opts && opts.create)
+			data.push('create');
+		else
+			data.push('change');
+		this.fire('onChange', data);
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
+		
 		if (this._open && (ctl.origin != this)) {
 			this._removeLabelFocus();
-			this.setOpen(false, {sendOnOpen: true});
-			this._fixMessage();
+			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
 		}
 	},
 	//Bug 1756559: ctrl key shall fore it to be sent first
@@ -498,13 +540,15 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				this._doEnterPressed();
 				break;
 			case 27://esc
-				this._fixMessage();
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
+				this._fixMessage();
+				startOnChange(this);
 				break;
 			default:
 				this._fixInputWidth();
 				this._fixDisplay();
+				startOnChange(this);
 		}
 	},
 	_updateInput: function (evt) {
@@ -521,12 +565,14 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			}, 100);
 	},
 	setOpen: function (open, opts) {
-		var pp = this.$n('pp');
 		this._open = open;
-		if (open)
-			this.open(this.$n(), pp, opts);
-		else
-			this.close(pp, opts);
+		if (this.$n('pp')) {
+			var pp = this.$n('pp');
+			if (open)
+				this.open(this.$n(), pp, opts);
+			else
+				this.close(pp, opts);
+		}
 	},
 	open: function (n, pp, opts) {
 		var offset;
@@ -553,8 +599,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.setFloating_(false);
 		pp.style.display = 'none';
 
-		if (opts && opts.sendOnOpen)
-			this.fire('onOpen', {open:false});
+		if (opts) {
+			if (opts.sendOnOpen)
+				this.fire('onOpen', {open:false});
+			if (opts.fixMessage)
+				this._fixMessage();
+		}
 	},
 	// calculate the left and top for drop-down list
 	_evalOffset: function (n) {
@@ -596,13 +646,14 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// filt out not matched item
 	_fixDisplay: function (opts) {
-		var empty = this.$n('empty'),
+		var zcls = this.getZclass() + '-empty-creatable',
+			empty = this.$n('empty'),
 			str = this.$n('inp').value,
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
-			index, element, eStyle,
-			found = false,
-			showAll;
+			found = false, // unselected match item exist
+			exist = false, // selected match item exist
+			index, element, eStyle, showAll;
 		str = str? str.trim() : '';
 		showAll = str && str == this._message || str == ''; 
 		// iterate through item list
@@ -619,13 +670,23 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				}
 				else
 					eStyle.display = 'none'; // hide if has input and not match
-			}
+			} else if (str && element.innerHTML.toLowerCase() == str.toLowerCase())
+				exist = true;
 		}
-		if (!found) { // show empty message if not found anything
-			empty.innerHTML = 'no result match your input - ' + str;
+		if (!found) {
+			if (this._creatable && !exist) {// show create message if input new item and creatable
+				empty.innerHTML = 'new label - ' + str;
+				jq(empty).addClass(zcls);
+			}
+			else { // show empty message if nothing can be selected
+				empty.innerHTML = 'no result match your input - ' + str;
+				jq(empty).removeClass(zcls);
+			}
 			empty.style.display = 'block';
-		} else
+		} else {
 			empty.style.display = 'none';
+			jq(empty).removeClass(zcls);
+		}
 	},
 	_updatePopupPosition: function () {
 		var n = this.$n(),
@@ -636,12 +697,14 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 	},
 	// show default message or clear input
-	_fixMessage: function () {
-		var inp = this.$n('inp');
-		inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getMessage()) : '';
-		this._fixInputWidth();
-		if (this._open)
-			this._fixDisplay();
+	_fixMessage: function (force) {
+		if (!this._open || force) {
+			var inp = this.$n('inp');
+			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getMessage()) : '';
+			this._fixInputWidth();
+			if (this._open)
+				this._fixDisplay();
+		}
 	},
 	domAttrs_: function () {
 		var v;

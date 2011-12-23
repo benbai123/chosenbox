@@ -48,13 +48,21 @@ public class Chosenbox extends Selectbox {
 	private List _selIdxs = new ArrayList();
 	private int _jsel = -1;
 	private boolean _open;
+	private boolean _creatable;
 	private String _message;
 	static {
-		addClientEvent(Selectbox.class, Events.ON_SELECT, CE_DUPLICATE_IGNORE|CE_IMPORTANT);
 		addClientEvent(Chosenbox.class, Events.ON_OPEN, CE_IMPORTANT);
+		addClientEvent(Chosenbox.class, Events.ON_CHANGE, CE_IMPORTANT);
+		addClientEvent(Chosenbox.class, "onDelete", CE_IMPORTANT);
 	}
 	public String getZclass() {
 		return _zclass == null ? "z-chosenbox" : _zclass;
+	}
+	public void setOpen(boolean open) {
+		if (_open != open) {
+			_open = open;
+			smartUpdate("open", _open);
+		}
 	}
 	public boolean isOpen() {
 		return _open;
@@ -141,37 +149,69 @@ public class Chosenbox extends Selectbox {
 		_jsel = -1;
 		smartUpdate("selectedIndex", -1);
 	}
+	public void setCreatable(boolean creatable) {
+		if (_creatable != creatable) {
+			_creatable = creatable;
+			smartUpdate("creatable", _creatable);
+		}
+	}
+	public boolean isCreatable() {
+		return _creatable;
+	}
+	public void addItemToSelection(Object o) {
+		ListModel lm = getModel();
+		for (int i = 0;i < lm.getSize();i ++) {
+			if (lm.getElementAt(i) == o) {
+				_selIdxs.add(i);
+				if (i < _jsel)
+					_jsel = i;
+				smartUpdate("chgSel", getChgSel());
+			}
+		}
+	}
 	protected void renderProperties(org.zkoss.zk.ui.sys.ContentRenderer renderer)
 	throws IOException {
 		super.renderProperties(renderer);
 		render(renderer, "message", getMessage());
 		renderer.render("selectedIndex", _jsel);
+		renderer.render("creatable", _creatable);
+		render(renderer, "open", _open);
 		if (_selIdxs.size() > 0) {
 			render(renderer, "chgSel", getChgSel());
 		}
 	}
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
-		if (cmd.equals(Events.ON_SELECT)) {
-			List selIdxs = (List)request.getData().get("");
-			_selIdxs.clear();
-			if (selIdxs.size() == 0) {
-				_jsel = -1;
-			} else {
-				int idx = Integer.valueOf((String)selIdxs.get(0));
-				_jsel = idx;
+		if (cmd.equals(Events.ON_SELECT) || cmd.equals("onDelete")) {
+			Integer idx = Integer.parseInt(((List)request.getData().get("")).get(0).toString());
+			if (cmd.equals(Events.ON_SELECT)) {
 				_selIdxs.add(idx);
-				for (int i = 1; i < selIdxs.size();i ++) {
-					idx = Integer.valueOf((String)selIdxs.get(i));
-					if (idx < _jsel)
-						_jsel = idx;
-					_selIdxs.add(idx);
+				if (idx < _jsel || _jsel == -1)
+					_jsel = idx;
+			} else {
+				_selIdxs.remove(idx);
+				if (_selIdxs.size() == 0)
+					_jsel = -1;
+				else if (idx == _jsel) { // current selected index deleted, get smallest one
+					int newSel = (Integer)_selIdxs.get(0);
+					_jsel = newSel;
+					for (int i = 1; i < _selIdxs.size();i ++) {
+						newSel = (Integer)_selIdxs.get(i);
+						if (newSel < _jsel)
+							_jsel = newSel;
+					}
 				}
 			}
-			Events.postEvent(new Event(Events.ON_SELECT, this, selIdxs));
+
+			if (cmd.equals(Events.ON_SELECT))
+				Events.postEvent(new Event(Events.ON_SELECT, this, idx));
+			else
+				Events.postEvent(new Event("onDelete", this, idx));
 		} else if (cmd.equals(Events.ON_OPEN)) {
 			_open = (Boolean)request.getData().get("open");
 			Events.postEvent(OpenEvent.getOpenEvent(request));
+		} else if (cmd.equals(Events.ON_CHANGE)) {
+			Events.postEvent(new Event(Events.ON_CHANGE, this, (List)request.getData().get("")));
 		}
 	}
 }

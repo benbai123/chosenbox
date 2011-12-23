@@ -1,14 +1,14 @@
 <%@ taglib uri="http://www.zkoss.org/dsp/web/core" prefix="c" %>
 
 .z-chosenbox {
-	background-color: #fff;
-	background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0.85, white), color-stop(0.99, #eeeeee));
-	background-image: -webkit-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-	background-image: -moz-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-	background-image: -o-linear-gradient(bottom, white 85%, #eeeeee 99%);
-	background-image: -ms-linear-gradient(top, #ffffff 85%,#eeeeee 99%);
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#eeeeee',GradientType=0 );
-	background-image: linear-gradient(top, #ffffff 85%,#eeeeee 99%);
+	background-color: #FFF;
+	background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0.85, white), color-stop(0.99, #EEEEEE));
+	background-image: -webkit-linear-gradient(center bottom, white 85%, #EEEEEE 99%);
+	background-image: -moz-linear-gradient(center bottom, white 85%, #EEEEEE 99%);
+	background-image: -o-linear-gradient(bottom, white 85%, #EEEEEE 99%);
+	background-image: -ms-linear-gradient(top, #FFFFFF 85%,#EEEEEE 99%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#FFFFFF', endColorstr='#EEEEEE',GradientType=0 );
+	background-image: linear-gradient(top, #FFFFFF 85%,#EEEEEE 99%);
 
 	display:-moz-inline-box;
 	display: inline-block;
@@ -20,7 +20,7 @@
 	border: 1px solid #CCCCCC;
 }
 .z-chosenbox-focus {
-	border: 1px solid #5897fb;
+	border: 1px solid #5897FB;
 }
 .z-chosenbox-sel {
 	padding-bottom: 3px;
@@ -32,16 +32,16 @@
 	-moz-background-clip   : padding;
 	-webkit-background-clip: padding-box;
 	background-clip        : padding-box;
-	background-color: #e4e4e4;
-	background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #e4e4e4), color-stop(0.7, #eeeeee));
-	background-image: -webkit-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
-	background-image: -moz-linear-gradient(center bottom, #e4e4e4 0%, #eeeeee 70%);
-	background-image: -o-linear-gradient(bottom, #e4e4e4 0%, #eeeeee 70%);
-	background-image: -ms-linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
-	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e4e4e4', endColorstr='#eeeeee',GradientType=0 );
-	background-image: linear-gradient(top, #e4e4e4 0%,#eeeeee 70%);
+	background-color: #E4E4E4;
+	background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #E4E4E4), color-stop(0.7, #EEEEEE));
+	background-image: -webkit-linear-gradient(center bottom, #E4E4E4 0%, #EEEEEE 70%);
+	background-image: -moz-linear-gradient(center bottom, #E4E4E4 0%, #EEEEEE 70%);
+	background-image: -o-linear-gradient(bottom, #E4E4E4 0%, #EEEEEE 70%);
+	background-image: -ms-linear-gradient(top, #E4E4E4 0%,#EEEEEE 70%);
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E4E4E4', endColorstr='#EEEEEE',GradientType=0 );
+	background-image: linear-gradient(top, #E4E4E4 0%,#EEEEEE 70%);
 	color: #333;
-	border: 1px solid #b4b4b4;
+	border: 1px solid #B4B4B4;
 	margin: 3px 0px 3px 5px;
 	white-space: nowrap;
 	display: inline-block;
@@ -60,7 +60,8 @@
 	</c:if>
 }
 .z-chosenbox-sel-item-focus {
-	background: #d4d4d4;
+	background: #D4D4D4;
+	border-color: #FED700;
 }
 .z-chosenbox-del-btn {
 	width: 12px;
@@ -130,5 +131,13 @@
 	padding-left: 10px;
 }
 .z-chosenbox-option-over {
+	background-color: #3875D7;
+}
+.z-chosenbox-empty {
+	padding: 3px;
+	padding-left: 10px;
+}
+.z-chosenbox-empty-creatable {
+	cursor: pointer;
 	background-color: #3875D7;
 }
