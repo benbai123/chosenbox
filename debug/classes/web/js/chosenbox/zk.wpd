@@ -1,3 +1,0 @@
-<package name="chosenbox" language="xul/html" cacheable="false" depends="zul.wgt">
-	<widget name="Chosenbox"/>
-</package>
