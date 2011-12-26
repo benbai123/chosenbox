@@ -25,7 +25,6 @@ it will be useful, but WITHOUT ANY WARRANTY.
 			}, 350);
 	}
 chosenbox.Chosenbox = zk.$extends(zul.Widget, {
-	_width: '300px',
 	$init: function () {
 		this.$supers('$init', arguments);
 		this._selItems = [];
@@ -171,9 +170,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.domListen_(inp, 'onFocus', 'doFocus_')
 			.domListen_(inp, 'onBlur', 'doBlur_');
 		zWatch.listen({onFloatUp: this});
-
-		n.style.width = this._width;
-		this.$n('pp').style.width = jq(n).width() + 'px';
+		this._fixWidth(n);
 		// fix selecte status
 		if (chgSel) {
 			this.setChgSel(chgSel);
@@ -191,6 +188,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		zWatch.unlisten({onFloatUp: this});
 		clearAllData(this);
 		this.$supers(chosenbox.Chosenbox, 'unbind_', arguments);
+	},
+	_fixWidth: function (n) {
+		if (this._width)
+			n.style.width = this._width;
+		this.$n('pp').style.width = jq(n).width() + 'px';
 	},
 	doBlur_: function (evt) {
 		jq(this.$n()).removeClass(this.getZclass() + '-focus');
