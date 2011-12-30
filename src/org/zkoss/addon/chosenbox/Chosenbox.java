@@ -70,7 +70,6 @@ public class Chosenbox extends HtmlBasedComponent {
 	private transient ListModel<?> _model;
 	private transient ListDataListener _dataListener;
 	private transient ItemRenderer<?> _renderer;
-	private static final String ATTR_ON_INIT_RENDER_POSTED = "org.zkoss.zul.onInitLaterPosted";
 	private transient boolean _childable;
 	private transient String[] _options;
 	private transient String[] _chgSel;
@@ -518,6 +517,7 @@ public class Chosenbox extends HtmlBasedComponent {
 					_model.removeListDataListener(_dataListener);
 				}
 				_model = model;
+				initDataListener();
 			}
 		} else if (_model != null) {
 			_model.removeListDataListener(_dataListener);
