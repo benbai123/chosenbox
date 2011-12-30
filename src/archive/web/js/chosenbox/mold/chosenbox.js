@@ -21,10 +21,8 @@ function (out) {
 			'<div id="', uid, '-txcnt" class="',zcls,'-txcnt"></div>', // hidden field for change input width dynamically
 			'<div id="', uid, '-pp" class="',zcls,'-pp ', zcls,'-pp-hidden">',
 			'<div id="', uid, '-sel" class="',zcls,'-sel">');
-	var s = $eval(this.items) || [] ;
-	for (var i = 0, j = s.length; i < j; i++) {
-		out.push('<div class="',zcls,'-option">', zUtl.encodeXML(s[i]), '</div>');
-	}
+	if (!this._renderByServer)
+		this._renderItems(out);
 	out.push('</div>',
 			'<div id="', uid, '-empty" class="',zcls,'-empty"></div>','</div></i>');
 }

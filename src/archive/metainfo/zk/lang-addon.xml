@@ -4,7 +4,7 @@
 	<version>
 		<version-class>org.zkoss.addon.chosenbox.Version</version-class>
 		<version-uid>0.8.0</version-uid>
-		<zk-version>5.0.0</zk-version><!-- or later -->
+		<zk-version>6.0.0</zk-version><!-- or later -->
 	</version>
 	<language-name>xul/html</language-name>
 	

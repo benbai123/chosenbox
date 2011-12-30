@@ -131,7 +131,7 @@
 	padding-left: 10px;
 }
 .z-chosenbox-option-over {
-	background-color: #3875D7;
+	background-color: #D3EFFA;
 }
 .z-chosenbox-empty {
 	padding: 3px;
@@ -139,5 +139,5 @@
 }
 .z-chosenbox-empty-creatable {
 	cursor: pointer;
-	background-color: #3875D7;
+	background-color: #D3EFFA;
 }

@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>org.zkoss.zul</groupId>
+	<groupId>org.zkoss.addon</groupId>
 	<artifactId>chosenbox</artifactId>
 	<version>0.8.0</version>
 	<packaging>jar</packaging>
@@ -13,6 +13,17 @@
 	<properties>
 		<zk.version>6.0.0-SNAPSHOT</zk.version>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>zk repository</id>
+			<url>http://mavensync.zkoss.org/maven2</url>
+		</repository>
+		<repository>
+			<id>ZK EE Evaluation</id>
+			<url>http://mavensync.zkoss.org/zk/ee-eval</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>

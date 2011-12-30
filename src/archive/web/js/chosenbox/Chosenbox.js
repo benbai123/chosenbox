@@ -15,21 +15,26 @@ it will be useful, but WITHOUT ANY WARRANTY.
 (function () {
 	function clearAllData(wgt) {
 		wgt._clearSelection();
-		wgt._startOnChange = wgt._chgSel = wgt.fixInputWidth = null;
+		wgt._separatorCode = wgt._startOnSearching = wgt._chgSel = wgt.fixInputWidth = null;
 	}
-	function startOnChange(wgt) {
-		if (!wgt._startOnChange)
-			wgt._startOnChange = setTimeout(function () {
-				wgt._fireOnChange(wgt.$n(('inp')).value);
-				wgt._startOnChange = null;
+	function startOnSearching(wgt) {
+		if (!wgt._startOnSearching)
+			wgt._startOnSearching = setTimeout(function () {
+				wgt._fireOnSearching(wgt.$n(('inp')).value);
+				wgt._startOnSearching = null;
 			}, 350);
 	}
 chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	$init: function () {
 		this.$supers('$init', arguments);
 		this._selItems = [];
+		this._separatorCode = [];
 	},
 	$define: {
+		items: function (v) {
+			if (!this._renderByServer)
+				this.setListContent();
+		},
 		/**
 		 * Returns the tab order of the input of this component.
 		 * <p>
@@ -53,12 +58,19 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 * @param int selectedIndex
 		 */
 		selectedIndex: function (v, opts) {
-			var options;
+			var options,
+				sel;
 			this._clearSelection();
-			if (this.$n() && v >= 0) {
-				options = jq(this.$n('sel')).children();
-				this._doSelect(options[v], v);
+			if ((sel = this.$n('sel')) && v >= 0) {
+				options = jq(sel).children();
+				this._doSelect(this._getItemByIndex(v));
 			}
+			if (v == -1)
+				this._fixPlaceholder(true);
+		},
+		renderByServer: function (v) {
+			if (v && this.$n())
+				this._clearListContent();
 		},
 		/**
 		 * Returns whether it is disabled.
@@ -105,15 +117,79 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (n) n.name = name;
 		},
 		/**
-		 * Returns the default message,
+		 * Returns the placeholder,
 		 * it will be displayed if no selected items while not focused.
 		 * @return String
 		 */
 		/**
-		 * Sets the default message.
-		 * @param String message
+		 * Sets the placeholder.
+		 * @param String placeholder
 		 */
-		message: null,
+		placeholder: null,
+		/**
+		 * Returns the empty message of this component.
+		 * <p>
+		 * Default: empty string.
+		 * <p>
+		 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+		 * the syntax "{0}" will be replaced with the input value at client side.
+		 * @return String
+		 */
+		/**
+		 * Sets the empty message of this component.
+		 * <p>
+		 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+		 * the syntax "{0}" will be replaced with the input value at client side.
+		 * @param String emptyMessage
+		 *            the empty message of this component.
+		 */
+		emptyMessage: null,
+		/**
+		 * Returns the create message of this component.
+		 * <p>
+		 * Default: empty string.
+		 * <p>
+		 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
+		 * the syntax "{0}" will be replaced with the input value at client side.
+		 * @return String
+		 */
+		/**
+		 * Sets the create message of this component.
+		 * <p>
+		 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
+		 * the syntax "{0}" will be replaced with the input value at client side.
+		 * @param String createMessage
+		 *            the create message of this component.
+		 */
+		createMessage: null,
+		// handle the code of special char because
+		// we need process it with both keyUp and keyDown
+		// which has different code with keyPress
+		separator: function (v) {
+			var separatorCode = this._separatorCode;
+			separatorCode.length = 0;
+			// save keycode for special symble
+			if (v.indexOf(',') != -1)
+				separatorCode.push(188);
+			if (v.indexOf('.') != -1)
+				separatorCode.push(190);
+			if (v.indexOf('/') != -1)
+				separatorCode.push(191);
+			if (v.indexOf(';') != -1)
+				separatorCode.push(zk.ie? 186 : 59);
+			if (v.indexOf("'") != -1)
+				separatorCode.push(222);
+			if (v.indexOf('[') != -1)
+				separatorCode.push(219);
+			if (v.indexOf(']') != -1)
+				separatorCode.push(221);
+			if (v.indexOf('\\') != -1)
+				separatorCode.push(220);
+			if (v.indexOf('-') != -1)
+				separatorCode.push(zk.ie? 189 : 109);
+			if (v.indexOf('=') != -1)
+				separatorCode.push(107);
+		},
 		/**
 		 * Returns whether can create new item,
 		 * The input will considered to be a new item if it is not exist and this property is true.
@@ -135,6 +211,39 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 */
 		open: null
 	},
+	setListContent: function (v) {
+		var sel,
+			out;
+		if (sel = this.$n('sel')) {
+			out = [];
+			this._renderItems(out, v);
+			sel.innerHTML = out.join('');
+			this._fixDisplay({hliteFirst: true, fromServer: true});
+		}
+	},
+	_clearListContent: function () {
+		if (this.$n()) {
+			this.$n('sel').innerHTML = '';
+			this.$n('empty').style.display = 'none';
+		}
+	},
+	_renderItems: function (out, content) {
+		var s = $eval(content? content : this._items) || [],
+			zcls = this.getZclass(),
+			uuid = this.uuid,
+			ori,
+			cur,
+			val,
+			id;
+		for (var i = 0, j = s.length; i < j; i++) {
+			ori = s[i];
+			cur = ori.lastIndexOf('_');
+			val = ori.substring(0, cur);
+			id = uuid + '_' + ori.substring(cur+1, ori.length);
+			out.push('<div id="', id,'" class="',zcls,'-option">', zUtl.encodeXML(val), '</div>');
+		}
+		return out;
+	},
 	getZclass: function () {
 		var zcls = this._zclass;
 		return zcls != null ? zcls: "z-chosenbox";
@@ -147,19 +256,29 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		if (sel = this.$n('sel')) { // select each item
 			options = jq(sel).children();
 			var length = options.length,
-				s = val.split(','),
-				min = this._selectedIndex,
-				index;
+				s = $eval(val),
+				min = -1,
+				renderByServer = this._renderByServer,
+				index, item, ori, cur, value;
 			for (var i = 0; i < s.length; i++) {
-				index = s[i];
-				if (min == -1 || min > index)
+				ori = s[i];
+				if (renderByServer) {
+					cur = ori.lastIndexOf('_');
+					value = ori.substring(0, cur);
+				}
+				index = parseInt( renderByServer? ori.substring(cur+1, ori.length) : ori);
+				if (min == -1 || index < min)
 					min = index;
-				if (index < length)
-					this._doSelect(options[index], index);
+				if (item = this._getItemByIndex(index))
+					this._doSelect(item);
+				else {
+					this._selectItemDirectly(index, value);
+				}
 			}
 			this._selectedIndex = min;
 		} else
 			this._chgSel = val; // not binded, just store it
+		this._fixPlaceholder(true);
 	},
 	bind_: function () {
 		this.$supers(chosenbox.Chosenbox, 'bind_', arguments);
@@ -169,15 +288,15 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 
 		this.domListen_(inp, 'onFocus', 'doFocus_')
 			.domListen_(inp, 'onBlur', 'doBlur_');
-		zWatch.listen({onFloatUp: this});
+		zWatch.listen({onFloatUp: this, onSize: this});
 		this._fixWidth(n);
 		// fix selecte status
 		if (chgSel) {
 			this.setChgSel(chgSel);
 			this._chgSel = null;
 		}
-		// fix message
-		this._fixMessage(true);
+		// fix placeholder
+		this._fixPlaceholder(true);
 		if (this._open && !this.isDisabled())
 			this.setOpen(true);
 	},
@@ -185,9 +304,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var inp = this.$n('inp');
 		this.domUnlisten_(inp, 'onFocus', 'doFocus_')
 			.domUnlisten_(inp, 'onBlur', 'doBlur_');
-		zWatch.unlisten({onFloatUp: this});
+		zWatch.unlisten({onFloatUp: this, onSize: this});
 		clearAllData(this);
 		this.$supers(chosenbox.Chosenbox, 'unbind_', arguments);
+	},
+	onSize: function () {
+		this._fixInputWidth();
 	},
 	_fixWidth: function (n) {
 		if (this._width)
@@ -210,12 +332,13 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	doMouseOut_: function (evt) {
 		var target = evt.domTarget;
 		// mouseout option
-		if (target.className.indexOf('option') > 0)
+		if (jq(target).hasClass(this.getZclass() + '-option-over'))
 			this._hliteOpt(target, false);
 	},
 	_hliteOpt: function (target, highlight) {
 		var zcls = this.getZclass() + '-option-over';
 		if (highlight) {
+			// clear old first
 			var oldHlite = jq(this.$n('sel')).find('.'+this.getZclass()+'-option-over')[0];
 			if (oldHlite)
 				jq(oldHlite).removeClass(zcls);
@@ -257,23 +380,20 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.setOpen(true, {sendOnOpen: true});
 		else {
 			// preset newHlite
-			if (oldHlite) {
-				this._hliteOpt(oldHlite, false);
+			if (oldHlite)
 				newHlite = next? oldHlite.nextSibling : oldHlite.previousSibling;
-			}
 			else
 				newHlite = next? sel.firstChild : // choose first/last option if no old highlighted
 					prev? sel.lastChild : null;
 			if (newHlite)
-				if (next)// find closest next unselected option
-					while (newHlite && newHlite.style.display == 'none')
-						newHlite = newHlite.nextSibling;
-				else if (prev) // find closest previous unselected option
-					while (newHlite && newHlite.style.display == 'none')
-						newHlite = newHlite.previousSibling;
+				while (newHlite && newHlite.style.display == 'none')
+					newHlite = next? newHlite.nextSibling :
+								prev? newHlite.previousSibling : null;
 
 			if (newHlite)
 				this._hliteOpt(newHlite, true);
+			else if (oldHlite)
+				this._hliteOpt(oldHlite, false);
 		}
 	},
 	// focus previous or next label,
@@ -308,7 +428,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (label = jq(this.$n()).find('.' + zcls)[0]) {
 				var dir = (label.previousSibling && key == 'backspace')? 'prev' : 'next';
 				this._moveLabelFocus(label, dir);
-				this._doDeselect(label, {sendOnDelete: true, fixSelectedIndex: true});
+				this._doDeselect(label, {sendOnSelect: true, fixSelectedIndex: true});
 				evt.stop(); // should stop or will delete text
 				// maybe have to filt out deselected item
 				this._fixDisplay();
@@ -329,92 +449,122 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			hlited;
 		if (this._open) {
 			if ((hlited = this.$n('empty')) && jq(hlited).hasClass(this.getZclass() + '-empty-creatable')) {
-				this._fireOnChange(this.$n('inp').value, {create: true});
-				this.setOpen(false, {sendOnOpen: true, fixMessage: true});
+				this._fireOnSearch(this.$n('inp').value);
+				if (this._open)
+					this.setOpen(false, {sendOnOpen: true});
 			} else if (($sel = jq(this.$n('sel')))
 					&& (hlited = $sel.find('.'+this.getZclass()+'-option-over')[0])) {
 				var options = $sel.children(),
 					index;
-				for (index = 0; index < options.length; index++)
-					if (hlited == options[index]) {
-						this._doSelect(hlited, index, {sendOnSelect: true});
-						this.setOpen(false, {sendOnOpen: true, fixMessage: true});
-						break;
-					}
+				this._doSelect(hlited, {sendOnSelect: true});
+				if (this._open)
+					this.setOpen(false, {sendOnOpen: true});
 			}
 		}
 	},
 	doClick_: function (evt) {
-		if (this.isDisabled()) return;
-		this._removeLabelFocus();
-		var target = evt.domTarget,
-			inp = this.$n('inp'),
-			zcls = this.getZclass(),
-			clsnm = target.className;
-		if (clsnm.startsWith(zcls+'-option') > 0) { // click on option
-			var options = jq(this.$n('sel')).children(),
-				index;
-			for (index = 0; index < options.length; index++)
-				if (target == options[index]) {
-					this._doSelect(target, index, {sendOnSelect: true});
-					break;
+		if (!this.isDisabled()) {
+			var target = evt.domTarget,
+				$target = jq(target),
+				inp = this.$n('inp'),
+				zcls = this.getZclass();
+			this._removeLabelFocus();
+			if (inp.value == this._placeholder)
+				inp.value = '';
+			if ($target.hasClass(zcls+'-option')) { // click on option
+				this._doSelect(target, {sendOnSelect: true});
+				if (this._open)
+					this.setOpen(false, {sendOnOpen: true, fixPlaceholder: true});
+			} else if ($target.hasClass(zcls + '-empty-creatable')) { // click on new label
+				this._fireOnSearch(inp.value);
+				if (this._open)
+					this.setOpen(false, {sendOnOpen: true});
+			} else {
+				if ($target.hasClass(zcls + '-sel-item')
+					|| $target.hasClass(zcls + '-sel-item-cnt')) { // click on label
+					var label = target,
+						zcls = this.getZclass() + '-sel-item';
+					if ($target.hasClass(zcls) || (label = $target.parent('.' + zcls)[0]))
+						jq(label).addClass(zcls + '-focus');
 				}
-			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
-		} else if (clsnm.indexOf('empty-creatable') > 0) { // click on new label
-			this._fireOnChange(inp.value, {create: true});
-			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
-		} else {
-			if (clsnm.indexOf('sel-item') > 0) { // click on label
-				var label = target,
-					$label = jq(label),
-					zcls = this.getZclass() + '-sel-item';
-				if ($label.hasClass(zcls) || (label = $label.parent('.' + zcls)[0]))
-					jq(label).addClass(zcls + '-focus');
+				if (!this._open)
+					this.setOpen(true, {sendOnOpen: true});
 			}
-			if (!this._open)
-				this.setOpen(true, {sendOnOpen: true});
+	
+			inp.focus();
+			this.$supers('doClick_', arguments);
 		}
-
-		if (inp.value == this._message)
-			inp.value = '';
-		inp.focus();
-		this.$supers('doClick_', arguments);
 	},
 	// select an item
-	_doSelect: function (target, index, opts) {
-		var _index = this._selectedIndex;
-		if (_index && (index < _index || _index == -1))
-				this._selectedIndex = index;
-		else if (_index != 0) // undefined, null
-			this._selectedIndex = index;
-		if (this._selItems.indexOf(target) == -1) {
-			this._createLabel(target, index);
+	_doSelect: function (target, opts) {
+		this._hliteOpt(target, false);
+		var _index = this._selectedIndex,
+			itemIndex = this._getIndexFromItem(target);
+		if (_index || _index == 0) {
+			if ((itemIndex < _index || _index == -1))
+				this._selectedIndex = itemIndex;
+		} else // undefined, null
+			this._selectedIndex = itemIndex;
+		if (this._selItems.indexOf(itemIndex) == -1) {
+			this._createLabel(target.innerHTML, itemIndex);
 			target.style.display = 'none'; // hide selected item
 			// record the selected item
-			this._selItems.push(target);
-			this._fixMessage();
+			this._selItems.push(itemIndex);
+			this._fixPlaceholder(true);
 
 			if (opts && opts.sendOnSelect)
-				this.fireSelectEvent('onSelect', index);
+				this.fireSelectEvent();
+		}
+	},
+	_selectItemDirectly: function (index, value) {
+		var _index = this._selectedIndex;
+		if (_index || _index == 0) {
+			if ((index < _index || _index == -1))
+				this._selectedIndex = index;
+		} else // undefined, null
+			this._selectedIndex = index;
+		if (this._selItems.indexOf(index) == -1) {
+			this._createLabel(value, index);
+			// record the selected item
+			this._selItems.push(index);
+			this._fixPlaceholder(true);
 		}
 	},
 	// deselect an item
 	_doDeselect: function (selectedItem, opts) {
 		var index = selectedItem.opt_index,
-			element = jq(this.$n('sel')).children()[index],
+			element = this._getItemByIndex(index),
 			_selItems = this._selItems;
+		if (this._open)
+			this.setOpen(false, {sendOnOpen: true});
 		// remove record
-		_selItems.splice(_selItems.indexOf(element), 1);
-		this._fixMessage();
-		// show origin option of deselected item
-		element.style.display = 'block';
+		_selItems.splice(_selItems.indexOf(index), 1);
+		// show origin option of deselected item if it exists
+		if (element)
+			element.style.display = 'block';
 		// remove label of deselected item
 		jq(selectedItem).remove();
 		this._updatePopupPosition();
-		if (opts && opts.sendOnDelete)
-			this.fireSelectEvent('onDelete', index); // only fire if active from client
+		if (opts && opts.sendOnSelect)
+			this.fireSelectEvent(); // only fire if active from client
 		if (opts && opts.fixSelectedIndex)
 			this._fixSelectedIndex();
+		// maybe have to filt out deselected item
+		this._fixDisplay();
+	},
+	// get the real index from an option item
+	_getIndexFromItem: function (element) {
+		var id = element.id;
+		return parseInt(id.substring(id.lastIndexOf('_')+1, id.length));
+	},
+	_getItemByIndex: function (index) {
+		var options = jq(this.$n('sel')).children();
+		for (var i = 0; i < options.length; i++)
+			if (this._getIndexFromItem(options[i]) == index)
+				return options[i];
+			else if (i > index) // over index
+				break;
+		return null;
 	},
 	// fix the selected index after deselect an item
 	_fixSelectedIndex: function () {
@@ -434,7 +584,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._selectedIndex = min;
 	},
 	// create label for selected item
-	_createLabel: function (target, index) {
+	_createLabel: function (value, index) {
 		var span = document.createElement("span"),
 			content = document.createElement("div"),
 			delbtn = document.createElement("div"),
@@ -442,7 +592,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			zcls = this.getZclass();
 		span.opt_index = index; // save the index
 		span.className = zcls + '-sel-item';
-		content.innerHTML = target.innerHTML;
+		content.innerHTML = value;
 		content.className = zcls + '-sel-item-cnt';
 		delbtn.className = zcls + '-del-btn';
 		
@@ -451,7 +601,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		jq(delbtn).bind('click', function () {
 			if (!wgt.isDisabled()) {
 				wgt.$n('inp').focus();
-				wgt._doDeselect(span, {sendOnDelete: true, fixSelectedIndex: true});
+				wgt._doDeselect(span, {sendOnSelect: true, fixSelectedIndex: true});
 			}
 		});
 		this.$n().insertBefore(span, this.$n('inp')); // add div mark
@@ -476,34 +626,36 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._selItems.length = 0;
 		this._selectedIndex = -1;
 	},
-	// fire onSelect or onDelete event to server
-	fireSelectEvent: function (evt, index) {
-		var	data = [];
-		data.push(index);
-		this.fire(evt, data);
+	// fire onSelectevent to server
+	fireSelectEvent: function () {
+		var	data = [],
+			c = this.$n().firstChild; // selected item
+		while (c && ((index = c.opt_index) || index == 0)) {
+			data.push(index);
+			c = c.nextSibling;
+		}
+		this.fire('onSelect', data);
 	},
-	// fire onChange event
-	_fireOnChange: function (value, opts) {
+	// fire onSearch event
+	_fireOnSearch: function (value) {
 		var	data = [];
 		data.push(value);
-		if (opts && opts.create)
-			data.push('create');
-		else
-			data.push('change');
-		this.fire('onChange', data);
+		this.fire('onSearch', data);
+	},
+	// fire onSearching event
+	_fireOnSearching: function (value) {
+		var	data = [];
+		data.push(value);
+		this.fire('onSearching', data);
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
-		
 		if (this._open && (ctl.origin != this)) {
 			this._removeLabelFocus();
-			this.setOpen(false, {sendOnOpen: true, fixMessage: true});
+			this.setOpen(false, {sendOnOpen: true, fixPlaceholder: true});
 		}
 	},
-	//Bug 1756559: ctrl key shall fore it to be sent first
-	beforeCtrlKeys_: function (evt) {
-		this._doChange(evt);
-	},
+
 	doKeyDown_: function (evt) {
 		var keyCode = evt.keyCode;
 		switch (keyCode) {
@@ -530,13 +682,18 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				this._deleteLabel('del', evt);
 				break;
 			default:
-				this._updateInput(evt);
+				//separator processed in key up only
+				if (!this._isSeparator(keyCode))
+					this._updateInput(evt);
+				else
+					evt.stop();
 		}
 		if (!(keyCode == 39 || keyCode == 46 || keyCode == 8 || keyCode == 37))
 			this._removeLabelFocus();
 	},
 	doKeyUp_: function (evt) {
-		var keyCode = evt.keyCode;
+		var keyCode = evt.keyCode,
+			opts = {hliteFirst: true};
 		switch (keyCode) {
 			case 13://enter
 				this._doEnterPressed();
@@ -544,14 +701,26 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			case 27://esc
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
-				this._fixMessage();
-				startOnChange(this);
+				this._fixPlaceholder();
+				startOnSearching(this);
 				break;
 			default:
-				this._fixInputWidth();
-				this._fixDisplay();
-				startOnChange(this);
+				if (this._isSeparator(keyCode))
+					this._doEnterPressed();
+				else {
+					this._fixInputWidth();
+					if (keyCode == 38 || keyCode == 40)
+						opts = null;
+					this._fixDisplay(opts);
+					startOnSearching(this);
+				}
 		}
+	},
+	_isSeparator: function (keyCode) {
+		var separator = this._separator,
+			separatorCode = this._separatorCode;
+		return (separatorCode && separatorCode.indexOf(keyCode) != -1) 
+			|| (separator && separator.toUpperCase().indexOf(String.fromCharCode(keyCode)) != -1);
 	},
 	_updateInput: function (evt) {
 		var inp = evt? evt.domTarget : this.$n('inp'),
@@ -567,7 +736,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			}, 100);
 	},
 	setOpen: function (open, opts) {
-		this._open = open;
+		if (!this.isDisabled())
+			this._open = open;
 		if (this.$n('pp')) {
 			var pp = this.$n('pp');
 			if (open)
@@ -604,9 +774,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		if (opts) {
 			if (opts.sendOnOpen)
 				this.fire('onOpen', {open:false});
-			if (opts.fixMessage)
-				this._fixMessage();
+			if (opts.fixPlaceholder)
+				this._fixPlaceholder();
 		}
+		if (this._renderByServer)
+			this._clearListContent();
 	},
 	// calculate the left and top for drop-down list
 	_evalOffset: function (n) {
@@ -648,46 +820,87 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// filt out not matched item
 	_fixDisplay: function (opts) {
-		var zcls = this.getZclass() + '-empty-creatable',
-			empty = this.$n('empty'),
-			str = this.$n('inp').value,
-			selItems = this._selItems,
+		var fromServer = opts && opts.fromServer;
+		if (!this._renderByServer || (opts && opts.fromServer)) {
+			var str = this.$n('inp').value,
+				oldhlite = jq(this.$n('sel')).find('.'+this.getZclass()+'-option-over')[0],
+				existance = this._fixSelDisplay(opts && opts.hliteFirst && !oldhlite, str, fromServer);
+			str = str? str.trim() : '';
+			this._fixEmptyDisplay({showExistance: true}, str, existance._found, existance._exist);
+		} else {
+			this._fixEmptyDisplay({showBlank: !this.$n('sel').firstChild});
+		}
+	},
+	// fix the display content of options
+	_fixSelDisplay: function (hliteFirst, str, fromServer) {
+		var selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			found = false, // unselected match item exist
 			exist = false, // selected match item exist
-			index, element, eStyle, showAll;
+			index, element, showAll, selected;
 		str = str? str.trim() : '';
-		showAll = str && str == this._message || str == ''; 
+		showAll = str && str == this._placeholder || str == '';
 		// iterate through item list
 		for (index = 0, element = options[index];
 			index < options.length;
 			index ++, element = options[index]) {
-			if (selItems.indexOf(element) < 0) {
-				eStyle = element.style;
-				if (showAll || str && element.innerHTML.toLowerCase().startsWith(str.toLowerCase())) {
-					if (!found && opts && opts.hliteFirst)
-						this._hliteOpt(element, true);
-					eStyle.display = 'block';
-					found = true;
+			// should fix each element if renew content from server
+			selected = selItems.indexOf(this._getIndexFromItem(element)) != -1;
+			if (fromServer || !selected) {
+				if (!selected &&
+						(showAll || str && element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))) {
+					if (!found) {
+						found = true;
+						if (hliteFirst)
+							this._hliteOpt(element, true);
+					}
+					element.style.display = 'block';
 				}
-				else
-					eStyle.display = 'none'; // hide if has input and not match
-			} else if (str && element.innerHTML.toLowerCase() == str.toLowerCase())
+				else {
+					this._hliteOpt(element, false);
+					element.style.display = 'none'; // hide if has input and not match
+				}
+			}
+			if (!exist && str && element.innerHTML.toLowerCase() == str.toLowerCase())
 				exist = true;
 		}
-		if (!found) {
-			if (this._creatable && !exist) {// show create message if input new item and creatable
-				empty.innerHTML = 'new label - ' + str;
-				jq(empty).addClass(zcls);
-			}
-			else { // show empty message if nothing can be selected
-				empty.innerHTML = 'no result match your input - ' + str;
-				jq(empty).removeClass(zcls);
-			}
+		return {_found: found, _exist: exist};
+	},
+	// fix the display of empty message block
+	_fixEmptyDisplay: function (type, str, found, exist) {
+		var ecls = this.getZclass() + '-empty-creatable',
+			empty = this.$n('empty');
+		if (type && (type.showBlank 
+					|| type.showExistance && this._renderByServer && !str)) {
+			empty.innerHTML = '&nbsp;';
+			jq(empty).removeClass(ecls);
 			empty.style.display = 'block';
-		} else {
-			empty.style.display = 'none';
-			jq(empty).removeClass(zcls);
+		} else if (type && type.showExistance) {
+			// set the status of empty block
+			if (!found) {
+				if (this._creatable && !exist && str) {// show create message if input new item and creatable
+					var createMsg = this._createMessage;
+					if (createMsg)
+						createMsg = zUtl.encodeXML(createMsg.replace(/\{0\}/g, str)).replace(/\n/g, '<br />');
+					else
+						createMsg = '&nbsp;';
+					empty.innerHTML = createMsg;
+					jq(empty).addClass(ecls);
+				}
+				else { // show empty message if nothing can be selected
+					var empMsg = this._emptyMessage;
+					if (empMsg)
+						empMsg = zUtl.encodeXML(empMsg.replace(/\{0\}/g, str)).replace(/\n/g, '<br />');
+					else
+						empMsg = '&nbsp;';
+					empty.innerHTML = empMsg;
+					jq(empty).removeClass(ecls);
+				}
+				empty.style.display = 'block';
+			} else {
+				empty.style.display = 'none';
+				jq(empty).removeClass(ecls);
+			}
 		}
 	},
 	_updatePopupPosition: function () {
@@ -698,11 +911,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		pp.style.left = offset.left + 'px';
 		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 	},
-	// show default message or clear input
-	_fixMessage: function (force) {
-		if (!this._open || force) {
-			var inp = this.$n('inp');
-			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getMessage()) : '';
+	// show placeholder or clear input
+	_fixPlaceholder: function (force) {
+		var inp;
+		if ((!this._open || force) && (inp = this.$n('inp'))) {
+			
+			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getPlaceholder()) : '';
 			this._fixInputWidth();
 			if (this._open)
 				this._fixDisplay();
@@ -712,7 +926,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var v;
 		return this.$supers('domAttrs_', arguments)
 			+ (this.isDisabled() ? ' disabled="disabled"' :'')
-			+ ((v=this.getMessage()) ? ' value="' + zUtl.encodeXML(v) + '"': '')
+			+ ((v=this.getPlaceholder()) ? ' value="' + zUtl.encodeXML(v) + '"': '')
 			+ ((v=this.getTabindex()) ? ' tabindex="' + v + '"': '')
 			+ ((v=this.getName()) ? ' name="' + zUtl.encodeXML(v) + '"': '');
 	}
