@@ -252,7 +252,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	/**
 	 * Returns the separate chars of this component.
 	 * <p>
-	 * Support: 0-9, A-Z (case insensitive), ,.;'[]/\-=
+	 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
 	 * <p>
 	 * Default: empty string.
 	 * <p>
@@ -266,7 +266,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	/**
 	 * Sets the separate chars of this component.
 	 * <p>
-	 * Support: 0-9, A-Z (case insensitive), ,.;'[]/\-=
+	 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
 	 * <p>
 	 * The separate chars will work as 'Enter' key,
 	 * it will not considered as input value but send onSerch or onSearching while key up. 

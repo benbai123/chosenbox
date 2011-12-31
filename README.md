@@ -29,6 +29,10 @@ Properties and Features
 ### separator
 ------------------------------
 The char set that will be considered as ENTER key.
-Supports: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
+Supports: 0-9, A-Z (case insensitive), and ,.;'[]/\\-=
 
-
+### creatable
+------------------------------
+Set the action for inexist value.
+true: Display createMessage while user input a value which not in model, and send it back with onSearch event if user press the ENTER key or separator.
+false: Display noResultsText while user input a value which not in model.
