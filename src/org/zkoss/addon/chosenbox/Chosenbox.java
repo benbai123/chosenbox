@@ -64,9 +64,9 @@ public class Chosenbox extends HtmlBasedComponent {
 	private boolean _creatable;
 	private boolean _renderByServer;
 	private String _placeholder = "";
-	private String _emptyMessage = "";
+	private String _noResultsText = "";
 	private String _createMessage = "";
-	private String _separator;
+	private String _separator = "";
 	private transient ListModel<?> _model;
 	private transient ListDataListener _dataListener;
 	private transient ItemRenderer<?> _renderer;
@@ -168,6 +168,17 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
+	 * Returns the placeholder of the input of this component.
+	 * <p>
+	 * Default: empty string.
+	 * <p>
+	 * The placeholder will be displayed in input if nothing selected and not focused.
+	 * @return String
+	 */
+	public String getPlaceholder() {
+		return _placeholder;
+	}
+	/**
 	 * Sets the placeholder of the input of this component.
 	 * <p>
 	 * The placeholder will be displayed in input if nothing selected and not focused.
@@ -183,43 +194,44 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
-	 * Returns the placeholder of the input of this component.
+	 * Sets the no-result text of this component.
 	 * <p>
-	 * Default: empty string.
-	 * <p>
-	 * The placeholder will be displayed in input if nothing selected and not focused.
-	 * @return String
-	 */
-	public String getPlaceholder() {
-		return _placeholder;
-	}
-	/**
-	 * Sets the empty message of this component.
-	 * <p>
-	 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+	 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
 	 * the syntax "{0}" will be replaced with the input value at client side.
-	 * @param String emptyMessage
-	 *            the empty message of this component.
+	 * @param String noResultsText
+	 *            the no-result text of this component.
 	 */
-	public void setEmptyMessage(String emptyMessage) {
-		if (emptyMessage == null)
-			emptyMessage = "";
-		if (!Objects.equals(_emptyMessage, emptyMessage)) {
-			_emptyMessage = emptyMessage;
-			smartUpdate("emptyMessage", getEmptyMessage());
+	public void setNoResultsText(String noResultsText) {
+		if (noResultsText == null)
+			noResultsText = "";
+		if (!Objects.equals(_noResultsText, noResultsText)) {
+			_noResultsText = noResultsText;
+			smartUpdate("noResultsText", getNoResultsText());
 		}
 	}
 	/**
-	 * Returns the empty message of this component.
+	 * Returns the no-result text of this component.
 	 * <p>
 	 * Default: empty string.
 	 * <p>
-	 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+	 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
 	 * the syntax "{0}" will be replaced with the input value at client side.
 	 * @return String
 	 */
-	public String getEmptyMessage() {
-		return _emptyMessage;
+	public String getNoResultsText() {
+		return _noResultsText;
+	}
+	/**
+	 * Returns the create message of this component.
+	 * <p>
+	 * Default: empty string.
+	 * <p>
+	 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
+	 * the syntax "{0}" will be replaced with the input value at client side.
+	 * @return String
+	 */
+	public String getCreateMessage() {
+		return _createMessage;
 	}
 	/**
 	 * Sets the create message of this component.
@@ -238,19 +250,23 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
-	 * Returns the create message of this component.
+	 * Returns the separate chars of this component.
+	 * <p>
+	 * Support: 0-9, A-Z (case insensitive), ,.;'[]/\-=
 	 * <p>
 	 * Default: empty string.
 	 * <p>
-	 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
-	 * the syntax "{0}" will be replaced with the input value at client side.
+	 * The separate chars will work as 'Enter' key,
+	 * it will not considered as input value but send onSerch or onSearching while key up.
 	 * @return String
 	 */
-	public String getCreateMessage() {
-		return _createMessage;
+	public String getSeparator() {
+		return _separator;
 	}
 	/**
 	 * Sets the separate chars of this component.
+	 * <p>
+	 * Support: 0-9, A-Z (case insensitive), ,.;'[]/\-=
 	 * <p>
 	 * The separate chars will work as 'Enter' key,
 	 * it will not considered as input value but send onSerch or onSearching while key up. 
@@ -265,9 +281,10 @@ public class Chosenbox extends HtmlBasedComponent {
 			smartUpdate("separator", getSeparator());
 		}
 	}
-	public String getSeparator() {
-		return _separator;
-	}
+	/**
+	 * Returns the selected objects.
+	 * @return Set
+	 */
 	public Set<Object> getSelectedObjects () {
 		final Set<Object> objects = new LinkedHashSet<Object>();
 		ListModel model = (ListModel)this.getModel();
@@ -278,16 +295,22 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 		return objects;
 	}
-	public void setSelectedItems (List items) {
+	/**
+	 * Sets the selected objects.
+	 * It will clear selection first.
+	 * @param List objects
+	 *            the objects to select.
+	 */
+	public void setSelectedObjects (List objects) {
 		// do nothing if no model
 		if (getModel() != null) {
 			_selIdxs.clear();
 			ListModel<String> lm = getModel();
 			List<String> chgSel = new ArrayList<String>();
 			boolean found = false;
-			for (int j = 0; j < items.size(); j ++) {
+			for (int j = 0; j < objects.size(); j ++) {
 				for (int i = 0; i < lm.getSize(); i++)
-					if (lm.getElementAt(i) == items.get(j)) {
+					if (lm.getElementAt(i) == objects.get(j)) {
 						if (getSelectedIndex() == -1 || getSelectedIndex() > i)
 							_jsel = i;
 						if (!isRenderByServer())
@@ -297,7 +320,7 @@ public class Chosenbox extends HtmlBasedComponent {
 						break;
 					}
 				if (!found)
-					throw new UiException("No such item: " + items.get(j));
+					throw new UiException("No such item: " + objects.get(j));
 				found = false;
 			}
 			if (isRenderByServer()) {
@@ -311,24 +334,19 @@ public class Chosenbox extends HtmlBasedComponent {
 			chgSel.clear();
 		}
 	}
-	private String[] getChgSel() {
-		if (isRenderByServer()) {
-			prepareItems(null, false, true);
-			if (_options != null) {
-				String [] chgSel = _options;
-				_options = null;
-				return chgSel;
-			}
-		} else {
-			ListModel<String> lm = getModel();
-			List<String> chgSel = new ArrayList<String>();
-			for (Integer i : _selIdxs) {
-				chgSel.add(i.toString());
-			}
-			return chgSel.toArray(new String[0]);
-		}
-		return new String[0];
+	/**
+	 * Returns the index of the selected item (-1 if no one is selected).
+	 * @return int
+	 */
+	public int getSelectedIndex() {
+		return _jsel;
 	}
+	/**
+	 * Sets the index of the selected item (-1 if no one is selected).
+	 * It will clear selection first.
+	 * @param int index
+	 *            the index to select.
+	 */
 	public void setSelectedIndex(int jsel) {
 		if (jsel <= -1)
 			jsel = -1;
@@ -356,18 +374,16 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
-	 * Returns the index of the selected item (-1 if no one is selected).
+	 * Returns whether the drop-down list is rendered by server side.
+	 * <p>
+	 * Default: false.
+	 * <p>
+	 * true: client side will not handle the drop-down options.
+	 * <p>
+	 * false: client side will handle the drop-down options.
 	 */
-	public int getSelectedIndex() {
-		return _jsel;
-	}
-	public void clearSelection() {
-		_selIdxs.clear();
-		_jsel = -1;
-		if (isRenderByServer())
-			smartUpdate("chgSel", getChgSel());
-		else
-			smartUpdate("selectedIndex", -1);
+	public boolean isRenderByServer() {
+		return _renderByServer;
 	}
 	/**
 	 * Sets whether the drop-down list is rendered by server side.
@@ -395,36 +411,6 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
-	 * Returns whether the drop-down list is rendered by server side.
-	 * <p>
-	 * Default: false.
-	 * <p>
-	 * true: client side will not handle the drop-down options.
-	 * <p>
-	 * false: client side will handle the drop-down options.
-	 */
-	public boolean isRenderByServer() {
-		return _renderByServer;
-	}
-	/**
-	 * Sets whether can create new item.
-	 * <p>
-	 * Default: false.
-	 * <p>
-	 * true: will show create message while value of input not exists.
-	 * <p>
-	 * false: will show empty message while value of input not exists.
-	 * 
-	 * @param creatable
-	 *            the boolean value.
-	 */
-	public void setCreatable(boolean creatable) {
-		if (_creatable != creatable) {
-			_creatable = creatable;
-			smartUpdate("creatable", _creatable);
-		}
-	}
-	/**
 	 * Returns whether can create new item.
 	 * <p>
 	 * Default: false.
@@ -436,66 +422,45 @@ public class Chosenbox extends HtmlBasedComponent {
 	public boolean isCreatable() {
 		return _creatable;
 	}
-	public void addItemToSelection(Object o) {
-		// do nothing if no model
-		if (getModel() != null) {
-			ListModel lm = getModel();
-			for (int i = 0;i < lm.getSize();i ++) {
-				if (lm.getElementAt(i) == o) {
-					_selIdxs.add(i);
-					if (i < _jsel)
-						_jsel = i;
-					smartUpdate("chgSel", getChgSel());
-				}
-			}
+	/**
+	 * Sets whether can create new item.
+	 * <p>
+	 * Default: false.
+	 * <p>
+	 * true: will show create message while value of input not exists.
+	 * <p>
+	 * false: will show no-result text while value of input not exists.
+	 * 
+	 * @param creatable
+	 *            the boolean value.
+	 */
+	public void setCreatable(boolean creatable) {
+		if (_creatable != creatable) {
+			_creatable = creatable;
+			smartUpdate("creatable", _creatable);
 		}
 	}
-
-	protected boolean isChildable() {
-		return _childable;
+	@SuppressWarnings("unchecked")
+	public <T> ItemRenderer<T> getRealRenderer() {
+		final ItemRenderer renderer = getItemRenderer();
+		return renderer != null ? renderer : _defRend;
 	}
-	private void prepareData() {
-		if (_selIdxs.size() > 0)
-			_chgSel = getChgSel();
-		if (!isRenderByServer())
-			prepareItems(null, false, false);
+	/**
+	 * Returns the renderer to render each item, or null if the default renderer
+	 * is used.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> ItemRenderer<T> getItemRenderer() {
+		return (ItemRenderer) _renderer;
 	}
-	// -- ComponentCtrl --//
-	public void invalidate() {
-		prepareData();
-		super.invalidate();
+	/**
+	 * Returns the model associated with this chosenbox, or null if this
+	 * chosenbox is not associated with any list data model.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> ListModel<T> getModel() {
+		return (ListModel) _model;
 	}
-	protected void renderProperties(org.zkoss.zk.ui.sys.ContentRenderer renderer)
-	throws IOException {
-		super.renderProperties(renderer);
-		if (!_rendered) {
-			prepareData();
-			_rendered = true;
-		}
-		if (_options != null) {
-			render(renderer, "items", _options);
-			_options = null; //purge the data
-		}
-		if (_chgSel != null) {
-			render(renderer, "chgSel", _chgSel);
-			_chgSel = null; //purge the data
-		}
-
-		render(renderer, "name", _name);
-		render(renderer, "disabled", isDisabled());
-		render(renderer, "renderByServer", isRenderByServer());
-		if (_tabindex != 0)
-			renderer.render("tabindex", _tabindex);
-
-		render(renderer, "placeholder", getPlaceholder());
-		render(renderer, "emptyMessage", getEmptyMessage());
-		render(renderer, "separator", getSeparator());
-		render(renderer, "createMessage", getCreateMessage());
-		renderer.render("selectedIndex", _jsel);
-		renderer.render("creatable", _creatable);
-		render(renderer, "open", _open);
-	}
-
 	/**
 	 * Sets the list model associated with this chosenbox. If a non-null model
 	 * is assigned, no matter whether it is the same as the previous, it will
@@ -528,12 +493,91 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 
 	/**
-	 * Returns the model associated with this chosenbox, or null if this
-	 * chosenbox is not associated with any list data model.
+	 * Clear all selected objects.
 	 */
-	@SuppressWarnings("unchecked")
-	public <T> ListModel<T> getModel() {
-		return (ListModel) _model;
+	public void clearSelection() {
+		_selIdxs.clear();
+		_jsel = -1;
+		if (isRenderByServer())
+			smartUpdate("chgSel", getChgSel());
+		else
+			smartUpdate("selectedIndex", -1);
+	}
+	/**
+	 * Add an item into selection.
+	 * @param o
+	 *            the object to add.
+	 */
+	public void addItemToSelection(Object o) {
+		// do nothing if no model
+		if (getModel() != null) {
+			ListModel lm = getModel();
+			for (int i = 0;i < lm.getSize();i ++) {
+				if (lm.getElementAt(i) == o) {
+					_selIdxs.add(i);
+					if (i < _jsel)
+						_jsel = i;
+					smartUpdate("chgSel", getChgSel());
+				}
+			}
+		}
+	}
+	/**
+	 * Remove an item from selection.
+	 * @param o
+	 *            the object to remove.
+	 */
+	public void removeItemFromSelection(Object o) {
+		// do nothing if no model
+		if (getModel() != null) {
+			ListModel lm = getModel();
+			for (int i = 0;i < lm.getSize();i ++) {
+				if (lm.getElementAt(i) == o) {
+					int cur = -1, min = -1;
+					for (int j = 0; j < _selIdxs.size(); j++) {
+						if (i == _selIdxs.get(j).intValue()) {
+							cur = j;
+						} else if (min == -1 || _selIdxs.get(j).intValue() < min) {
+							min = _selIdxs.get(j).intValue();
+						}
+					}
+					if (cur != -1) {
+						_jsel = min;
+						_selIdxs.remove(cur);
+						smartUpdate("chgSel", getChgSel());
+					}
+					break;
+				}
+			}
+		}
+	}
+	private String[] getChgSel() {
+		if (isRenderByServer()) {
+			prepareItems(null, false, true);
+			if (_options != null) {
+				String [] chgSel = _options;
+				_options = null;
+				return chgSel;
+			}
+		} else {
+			ListModel<String> lm = getModel();
+			List<String> chgSel = new ArrayList<String>();
+			for (Integer i : _selIdxs) {
+				chgSel.add(i.toString());
+			}
+			return chgSel.toArray(new String[0]);
+		}
+		return new String[0];
+	}
+	
+	protected boolean isChildable() {
+		return _childable;
+	}
+	private void prepareData() {
+		if (_selIdxs.size() > 0)
+			_chgSel = getChgSel();
+		if (!isRenderByServer())
+			prepareItems(null, false, false);
 	}
 
 	// fix selected indexes while model changed or replaced
@@ -611,6 +655,41 @@ public class Chosenbox extends HtmlBasedComponent {
 		_model.addListDataListener(_dataListener);
 	}
 
+	// -- ComponentCtrl --//
+	public void invalidate() {
+		prepareData();
+		super.invalidate();
+	}
+	protected void renderProperties(org.zkoss.zk.ui.sys.ContentRenderer renderer)
+	throws IOException {
+		super.renderProperties(renderer);
+		if (!_rendered) {
+			prepareData();
+			_rendered = true;
+		}
+		if (_options != null) {
+			render(renderer, "items", _options);
+			_options = null; //purge the data
+		}
+		if (_chgSel != null) {
+			render(renderer, "chgSel", _chgSel);
+			_chgSel = null; //purge the data
+		}
+
+		render(renderer, "name", _name);
+		render(renderer, "disabled", isDisabled());
+		render(renderer, "renderByServer", isRenderByServer());
+		if (_tabindex != 0)
+			renderer.render("tabindex", _tabindex);
+
+		render(renderer, "placeholder", getPlaceholder());
+		render(renderer, "noResultsText", getNoResultsText());
+		render(renderer, "separator", getSeparator());
+		render(renderer, "createMessage", getCreateMessage());
+		renderer.render("selectedIndex", _jsel);
+		renderer.render("creatable", _creatable);
+		render(renderer, "open", _open);
+	}
 	@SuppressWarnings("unchecked")
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
@@ -647,19 +726,6 @@ public class Chosenbox extends HtmlBasedComponent {
 				updateListContent(value);
 			Events.postEvent(new InputEvent(cmd, this, value, _value));
 		}
-	}
-	@SuppressWarnings("unchecked")
-	public <T> ItemRenderer<T> getRealRenderer() {
-		final ItemRenderer renderer = getItemRenderer();
-		return renderer != null ? renderer : _defRend;
-	}
-	/**
-	 * Returns the renderer to render each item, or null if the default renderer
-	 * is used.
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> ItemRenderer<T> getItemRenderer() {
-		return (ItemRenderer) _renderer;
 	}
 	private static final ItemRenderer<Object> _defRend = new ItemRenderer<Object>() {
 		public String render(final Component owner, final Object data, final int index) {

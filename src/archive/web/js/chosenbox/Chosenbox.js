@@ -127,23 +127,23 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 */
 		placeholder: null,
 		/**
-		 * Returns the empty message of this component.
+		 * Returns the no-result text of this component.
 		 * <p>
 		 * Default: empty string.
 		 * <p>
-		 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+		 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
 		 * the syntax "{0}" will be replaced with the input value at client side.
 		 * @return String
 		 */
 		/**
-		 * Sets the empty message of this component.
+		 * Sets the no-result text of this component.
 		 * <p>
-		 * The empty message will be displayed in popup if nothing match to the input value and can not create either,
+		 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
 		 * the syntax "{0}" will be replaced with the input value at client side.
-		 * @param String emptyMessage
-		 *            the empty message of this component.
+		 * @param String noResultsText
+		 *            the no-result text of this component.
 		 */
-		emptyMessage: null,
+		noResultsText: null,
 		/**
 		 * Returns the create message of this component.
 		 * <p>
@@ -866,7 +866,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		}
 		return {_found: found, _exist: exist};
 	},
-	// fix the display of empty message block
+	// fix the display of no-result text block
 	_fixEmptyDisplay: function (type, str, found, exist) {
 		var ecls = this.getZclass() + '-empty-creatable',
 			empty = this.$n('empty');
@@ -887,8 +887,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					empty.innerHTML = createMsg;
 					jq(empty).addClass(ecls);
 				}
-				else { // show empty message if nothing can be selected
-					var empMsg = this._emptyMessage;
+				else { // show no-result text if nothing can be selected
+					var empMsg = this._noResultsText;
 					if (empMsg)
 						empMsg = zUtl.encodeXML(empMsg.replace(/\{0\}/g, str)).replace(/\n/g, '<br />');
 					else
