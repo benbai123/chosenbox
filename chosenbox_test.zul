@@ -18,7 +18,7 @@
 	<chosenbox id="cbx" model="${submodel}" width="500px" renderByServer="true"
 		onChanging="" separator=",.;'/"
 		placeholder="This is the test box" tabindex="1" creatable="true"
-		createMessage="create new - {0}" emptyMessage="no such item - {0}"
+		createMessage="create new - {0}" noResultsText="no such item - {0}"
 		selectedIndex="2" name="testbox">
 		<attribute name="onSelect">
 			addMsg(msg, "current selection: " + event.getSelectedObjects());
@@ -90,12 +90,26 @@
 			addMsg(msg, "render by server? " + cbx.isRenderByServer());
 		</attribute>
 	</checkbox>
+	<button label="remove first tony">
+		<attribute name="onClick">
+			cbx.removeItemFromSelection(cbx.getModel().getElementAt(0));
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
+	<button label="remove first jumper">
+		<attribute name="onClick">
+			cbx.removeItemFromSelection(cbx.getModel().getElementAt(2));
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
 	<button label="set item 2 and 0 selected">
 		<attribute name="onClick">
 			List l = new ArrayList();
 			l.add(cbx.getModel().getElementAt(2));
 			l.add(cbx.getModel().getElementAt(0));
-			cbx.setSelectedItems(l);
+			cbx.setSelectedObjects(l);
 			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
 			addMsg(msg, "current index: " + cbx.getSelectedIndex());
 		</attribute>
@@ -161,7 +175,7 @@
 			List l = new ArrayList();
 			l.add(new String("Jumper"));
 			addMsg(msg, "should throw exception");
-			cbx.setSelectedItems(l);
+			cbx.setSelectedObjects(l);
 		</attribute>
 	</button>
 	<div />
