@@ -1,7 +1,7 @@
 <zk>
 	<zscript>
 		<![CDATA[
-		String[] userName = { new String("Tony"), new String("Ryan"), new String("Jumper"), new String("Wing"), new String("Sam"), new String("Tony"), new String("Ryan"), new String("Jumper"), new String("Wing"), new String("Sam") };
+		String[] userName = { new String("Tony"), new String("Ryan"), new String("Jumper"), new String("Wing"), new String("Sam"), new String("Tony1"), new String("Ryan1"), new String("Jumper1"), new String("Wing1"), new String("Sam1") };
 		String[] userName2 = { new String("Tony2"), new String("Ryan2"), new String("Jumper2"), new String("Wing2"), new String("Sam2")};
 		ListModelList model = new ListModelList(userName);
 		ListModelList model2 = new ListModelList(userName2);
@@ -15,7 +15,7 @@
 	<chosenbox model="${model}" tabindex="2">
 		<template name="model">Name is ${each}</template>
 	</chosenbox>
-	<chosenbox id="cbx" model="${submodel}" width="500px" renderByServer="true"
+	<chosenbox id="cbx" model="${model}" width="500px" renderByServer="true"
 		onChanging="" separator=",.;'/"
 		placeholder="This is the test box" tabindex="1" creatable="true"
 		createMessage="create new - {0}" noResultsText="no such item - {0}"
@@ -57,6 +57,38 @@
 	<button label="change model">
 		<attribute name="onClick">
 			cbx.setModel(model2);
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
+	<button label="insert AAA to position 2">
+		<attribute name="onClick">
+			model.add(2, "AAA");
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
+	<button label="insert BBB CCC position 2">
+		<attribute name="onClick">
+			List l = new ArrayList();
+			l.add("BBB");
+			l.add("CCC");
+			model.addAll(2, l);
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
+	<button label="remove item 3">
+		<attribute name="onClick">
+			model.remove(3);
+			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
+			addMsg(msg, "current index: " + cbx.getSelectedIndex());
+		</attribute>
+	</button>
+	<button label="remove item 0 and 1">
+		<attribute name="onClick">
+			model.remove(1);
+			model.remove(0);
 			addMsg(msg, "current selection: " + cbx.getSelectedObjects());
 			addMsg(msg, "current index: " + cbx.getSelectedIndex());
 		</attribute>

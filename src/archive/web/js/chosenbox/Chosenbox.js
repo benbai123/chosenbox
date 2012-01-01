@@ -129,7 +129,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		/**
 		 * Returns the no-result text of this component.
 		 * <p>
-		 * Default: empty string.
+		 * Default: null.
 		 * <p>
 		 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
 		 * the syntax "{0}" will be replaced with the input value at client side.
@@ -147,7 +147,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		/**
 		 * Returns the create message of this component.
 		 * <p>
-		 * Default: empty string.
+		 * Default: null.
 		 * <p>
 		 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
 		 * the syntax "{0}" will be replaced with the input value at client side.
@@ -162,13 +162,34 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		 *            the create message of this component.
 		 */
 		createMessage: null,
-		// handle the code of special char because
-		// we need process it with both keyUp and keyDown
-		// which has different code with keyPress
+		/**
+		 * Returns the separate chars of this component.
+		 * <p>
+		 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
+		 * <p>
+		 * Default: null.
+		 * <p>
+		 * The separate chars will work as 'Enter' key,
+		 * it will not considered as input value but send onSerch or onSearching while key up.
+		 * @return String
+		 */
+		/**
+		 * Sets the separate chars of this component.
+		 * <p>
+		 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
+		 * <p>
+		 * The separate chars will work as 'Enter' key,
+		 * it will not considered as input value but send onSerch or onSearching while key up. 
+		 * @param String createMessage
+		 *            the create message of this component.
+		 */
 		separator: function (v) {
 			var separatorCode = this._separatorCode;
 			separatorCode.length = 0;
 			// save keycode for special symble
+			// handle the code of special char because
+			// we need process it with both keyUp and keyDown
+			// which has different code with keyPress
 			if (v.indexOf(',') != -1)
 				separatorCode.push(188);
 			if (v.indexOf('.') != -1)
@@ -213,11 +234,17 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	setListContent: function (v) {
 		var sel,
-			out;
+			out,
+			oldHlite,
+			tmpIdx;
 		if (sel = this.$n('sel')) {
+			if (oldHlite = jq(this.$n('sel')).find('.'+this.getZclass()+'-option-over')[0])
+				tmpIdx = this._getIndexFromItem(oldHlite);
 			out = [];
 			this._renderItems(out, v);
 			sel.innerHTML = out.join('');
+			if (tmpIdx && (oldHlite = this._getItemByIndex(tmpIdx)))
+				this._hliteOpt(oldHlite, true);
 			this._fixDisplay({hliteFirst: true, fromServer: true});
 		}
 	},
@@ -702,7 +729,6 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
 				this._fixPlaceholder();
-				startOnSearching(this);
 				break;
 			default:
 				if (this._isSeparator(keyCode))
@@ -712,9 +738,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					if (keyCode == 38 || keyCode == 40)
 						opts = null;
 					this._fixDisplay(opts);
-					startOnSearching(this);
 				}
 		}
+		if (!(keyCode >= 37 && keyCode <= 40 || keyCode == 13))
+			startOnSearching(this);
 	},
 	_isSeparator: function (keyCode) {
 		var separator = this._separator,

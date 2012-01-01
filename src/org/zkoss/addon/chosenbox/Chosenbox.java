@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 import org.zkoss.lang.Objects;
@@ -63,10 +64,10 @@ public class Chosenbox extends HtmlBasedComponent {
 	private boolean _open;
 	private boolean _creatable;
 	private boolean _renderByServer;
-	private String _placeholder = "";
-	private String _noResultsText = "";
-	private String _createMessage = "";
-	private String _separator = "";
+	private String _placeholder;
+	private String _noResultsText;
+	private String _createMessage;
+	private String _separator;
 	private transient ListModel<?> _model;
 	private transient ListDataListener _dataListener;
 	private transient ItemRenderer<?> _renderer;
@@ -170,7 +171,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	/**
 	 * Returns the placeholder of the input of this component.
 	 * <p>
-	 * Default: empty string.
+	 * Default: null.
 	 * <p>
 	 * The placeholder will be displayed in input if nothing selected and not focused.
 	 * @return String
@@ -186,12 +187,24 @@ public class Chosenbox extends HtmlBasedComponent {
 	 *            the placeholder of the input of this component.
 	 */
 	public void setPlaceholder(String placeholder) {
-		if (placeholder == null)
-			placeholder = "";
+		if (placeholder != null && placeholder.length() == 0)
+			placeholder = null;
 		if (!Objects.equals(_placeholder, placeholder)) {
 			_placeholder = placeholder;
 			smartUpdate("placeholder", getPlaceholder());
 		}
+	}
+	/**
+	 * Returns the no-result text of this component.
+	 * <p>
+	 * Default: null.
+	 * <p>
+	 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
+	 * the syntax "{0}" will be replaced with the input value at client side.
+	 * @return String
+	 */
+	public String getNoResultsText() {
+		return _noResultsText;
 	}
 	/**
 	 * Sets the no-result text of this component.
@@ -202,29 +215,17 @@ public class Chosenbox extends HtmlBasedComponent {
 	 *            the no-result text of this component.
 	 */
 	public void setNoResultsText(String noResultsText) {
-		if (noResultsText == null)
-			noResultsText = "";
+		if (noResultsText != null && noResultsText.length() == 0)
+			noResultsText = null;
 		if (!Objects.equals(_noResultsText, noResultsText)) {
 			_noResultsText = noResultsText;
 			smartUpdate("noResultsText", getNoResultsText());
 		}
 	}
 	/**
-	 * Returns the no-result text of this component.
-	 * <p>
-	 * Default: empty string.
-	 * <p>
-	 * The no-result text will be displayed in popup if nothing match to the input value and can not create either,
-	 * the syntax "{0}" will be replaced with the input value at client side.
-	 * @return String
-	 */
-	public String getNoResultsText() {
-		return _noResultsText;
-	}
-	/**
 	 * Returns the create message of this component.
 	 * <p>
-	 * Default: empty string.
+	 * Default: null.
 	 * <p>
 	 * The create message will be displayed in popup if nothing match to the input value but can create as new label,
 	 * the syntax "{0}" will be replaced with the input value at client side.
@@ -242,8 +243,8 @@ public class Chosenbox extends HtmlBasedComponent {
 	 *            the create message of this component.
 	 */
 	public void setCreateMessage(String createMessage) {
-		if (createMessage == null)
-			createMessage = "";
+		if (createMessage != null && createMessage.length() == 0)
+			createMessage = null;
 		if (!Objects.equals(_createMessage, createMessage)) {
 			_createMessage = createMessage;
 			smartUpdate("createMessage", getCreateMessage());
@@ -254,7 +255,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	 * <p>
 	 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
 	 * <p>
-	 * Default: empty string.
+	 * Default: null.
 	 * <p>
 	 * The separate chars will work as 'Enter' key,
 	 * it will not considered as input value but send onSerch or onSearching while key up.
@@ -274,8 +275,8 @@ public class Chosenbox extends HtmlBasedComponent {
 	 *            the create message of this component.
 	 */
 	public void setSeparator(String separator) {
-		if (separator == null)
-			separator = "";
+		if (separator != null && separator.length() == 0)
+			separator = null;
 		if (!Objects.equals(_separator, separator)) {
 			_separator = separator;
 			smartUpdate("separator", getSeparator());
@@ -324,7 +325,7 @@ public class Chosenbox extends HtmlBasedComponent {
 				found = false;
 			}
 			if (isRenderByServer()) {
-				prepareItems(null, false, true);
+				prepareItems(null, true);
 				if (_options != null) {
 					smartUpdate("chgSel", _options);
 					_options = null;
@@ -400,7 +401,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	public void setRenderByServer(boolean renderByServer) {
 		if (_renderByServer != renderByServer) {
 			if (!renderByServer) {
-				prepareItems(null, false, false);
+				prepareItems(null, false);
 				if (_options != null) {
 					smartUpdate("listContent", _options);
 					_options = null; //purge the data
@@ -488,8 +489,8 @@ public class Chosenbox extends HtmlBasedComponent {
 			_model.removeListDataListener(_dataListener);
 			_model = null;
 		}
-		fixIndexs(true);
-		updateItems(null);
+		fixIndexs(true, null);
+		updateItems();
 	}
 
 	/**
@@ -553,7 +554,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 	private String[] getChgSel() {
 		if (isRenderByServer()) {
-			prepareItems(null, false, true);
+			prepareItems(null, true);
 			if (_options != null) {
 				String [] chgSel = _options;
 				_options = null;
@@ -577,11 +578,11 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (_selIdxs.size() > 0)
 			_chgSel = getChgSel();
 		if (!isRenderByServer())
-			prepareItems(null, false, false);
+			prepareItems(null, false);
 	}
 
 	// fix selected indexes while model changed or replaced
-	private void fixIndexs(boolean modelReplaced) {
+	private void fixIndexs(boolean modelReplaced, ListDataEvent event) {
 		// model instance is changed
 		if (modelReplaced) {
 			if (_model == null) {
@@ -595,22 +596,50 @@ public class Chosenbox extends HtmlBasedComponent {
 					}
 				}
 			}
+		} else {
+			int pos0 = event.getIndex0();
+			int pos1 = event.getIndex1();
+			int amount = pos1 - pos0 + 1;
+			switch (event.getType()) {
+				case ListDataEvent.INTERVAL_ADDED:
+					for (int i = 0; i < _selIdxs.size(); i++) {
+						if (_selIdxs.get(i) >= pos0)
+							_selIdxs.set(i, _selIdxs.get(i) + amount);
+					}
+					break;
+				case ListDataEvent.INTERVAL_REMOVED:
+					for(ListIterator<Integer> lit = _selIdxs.listIterator(); lit.hasNext();) {
+						Integer i = lit.next();
+						if (i > pos1)
+							lit.set(i - amount);
+						else if (i >= pos0)
+							lit.remove();
+					}
+					break;
+			}
 		}
 	}
 	// render model content to String array
-	private void prepareItems(String prefix, boolean excludeSelected, boolean excludeUnselected) {
+	private void prepareItems(String prefix, boolean excludeUnselected) {
 		if (_model != null) {
 			List<String> optList = new ArrayList<String>();
 			final boolean old = _childable;
 			try {
 				_childable = true;
 				final ItemRenderer renderer = getRealRenderer();
-				for (int i = 0; i < _model.getSize(); i++) {
-					String s = renderer.render(this, _model.getElementAt(i), i) + "_" + i;
-					if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase()))
-							&& (!excludeSelected || !_selIdxs.contains(Integer.valueOf(i)))
-							&& (!excludeUnselected || _selIdxs.contains(Integer.valueOf(i))))
-						optList.add(s);
+				// order by _selIdxs content if only prepare selected items
+				if (excludeUnselected) {
+					for (int i = 0; i < _selIdxs.size(); i++) {
+						String s = renderer.render(this, _model.getElementAt(_selIdxs.get(i)), _selIdxs.get(i)) + "_" + _selIdxs.get(i);
+						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase())))
+							optList.add(s);
+					}
+				} else {
+					for (int i = 0; i < _model.getSize(); i++) {
+						String s = renderer.render(this, _model.getElementAt(i), i) + "_" + i;
+						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase())))
+							optList.add(s);
+					}
 				}
 				if (optList.size() > 0)
 					_options = optList.toArray(new String[0]);
@@ -623,8 +652,8 @@ public class Chosenbox extends HtmlBasedComponent {
 			}
 		}
 	}
-	private void updateItems(String prefix) {
-		prepareItems(prefix, false, false);
+	private void updateItems() {
+		prepareItems(null, false);
 		if (_options != null) {
 			smartUpdate("items", _options);
 			_options = null; //purge the data
@@ -637,7 +666,7 @@ public class Chosenbox extends HtmlBasedComponent {
 			&& (prefix == null || "".equals(prefix)))
 			smartUpdate("listContent", new String[0]);
 		else {
-			prepareItems(prefix, false, false);
+			prepareItems(prefix, false);
 			if (_options != null) {
 				smartUpdate("listContent", _options);
 				_options = null; //purge the data
@@ -649,7 +678,8 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (_dataListener == null)
 			_dataListener = new ListDataListener() {
 				public void onChange(ListDataEvent event) {
-					updateItems(null);
+					fixIndexs(false, event);
+					updateItems();
 				}
 			};
 		_model.addListDataListener(_dataListener);
