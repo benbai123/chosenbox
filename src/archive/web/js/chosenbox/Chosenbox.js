@@ -15,7 +15,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 (function () {
 	function clearAllData(wgt) {
 		wgt._clearSelection();
-		wgt._separatorCode = wgt._startOnSearching = wgt._chgSel = wgt.fixInputWidth = null;
+		wgt.fixDisplay = wgt._separatorCode = wgt._startOnSearching = wgt._chgSel = wgt.fixInputWidth = null;
 	}
 	function startOnSearching(wgt) {
 		if (!wgt._startOnSearching)
@@ -242,10 +242,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				tmpIdx = this._getIndexFromItem(oldHlite);
 			out = [];
 			this._renderItems(out, v);
+			this._clearListContent();
 			sel.innerHTML = out.join('');
 			if (tmpIdx && (oldHlite = this._getItemByIndex(tmpIdx)))
 				this._hliteOpt(oldHlite, true);
-			this._fixDisplay({hliteFirst: true, fromServer: true});
+			this._startFixDisplay({hliteFirst: true, fromServer: true});
 		}
 	},
 	_clearListContent: function () {
@@ -458,7 +459,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				this._doDeselect(label, {sendOnSelect: true, fixSelectedIndex: true});
 				evt.stop(); // should stop or will delete text
 				// maybe have to filt out deselected item
-				this._fixDisplay();
+				this._startFixDisplay();
 			}
 			else if ((label = inp.previousSibling) && key == 'backspace')
 				jq(label).addClass(zcls);
@@ -577,7 +578,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		if (opts && opts.fixSelectedIndex)
 			this._fixSelectedIndex();
 		// maybe have to filt out deselected item
-		this._fixDisplay();
+		this._startFixDisplay();
 	},
 	// get the real index from an option item
 	_getIndexFromItem: function (element) {
@@ -737,7 +738,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					this._fixInputWidth();
 					if (keyCode == 38 || keyCode == 40)
 						opts = null;
-					this._fixDisplay(opts);
+					this._startFixDisplay(opts);
 				}
 		}
 		if (!(keyCode >= 37 && keyCode <= 40 || keyCode == 13))
@@ -747,7 +748,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var separator = this._separator,
 			separatorCode = this._separatorCode;
 		return (separatorCode && separatorCode.indexOf(keyCode) != -1) 
-			|| (separator && separator.toUpperCase().indexOf(String.fromCharCode(keyCode)) != -1);
+			|| ((keyCode >= 48 && keyCode <= 122) && separator 
+				&& separator.toUpperCase().indexOf(String.fromCharCode(keyCode)) != -1);
 	},
 	_updateInput: function (evt) {
 		var inp = evt? evt.domTarget : this.$n('inp'),
@@ -786,7 +788,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 		pp.style.zIndex = n.style.zIndex;
 
-		this._fixDisplay({hliteFirst: true});
+		this._startFixDisplay({hliteFirst: true});
 		zk(pp).slideDown(this);
 
 		if (opts && opts.sendOnOpen)
@@ -844,6 +846,16 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		if (this.fixInputWidth)
 			clearTimeout(this.fixInputWidth);
 		this.fixInputWidth = null;
+	},
+	// reduce the execution times of fix display
+	_startFixDisplay: function (opts) {
+		var wgt = this,
+			old;
+		if (old = this.fixDisplay)
+			clearTimeout(old);
+		this.fixDisplay = setTimeout(function () {
+			wgt._fixDisplay(opts);
+		}, 200);
 	},
 	// filt out not matched item
 	_fixDisplay: function (opts) {
@@ -946,7 +958,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getPlaceholder()) : '';
 			this._fixInputWidth();
 			if (this._open)
-				this._fixDisplay();
+				this._startFixDisplay();
 		}
 	},
 	domAttrs_: function () {

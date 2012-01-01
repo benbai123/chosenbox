@@ -49,6 +49,9 @@
 		display: inline;
 		zoom: 1;
 	</c:if>
+	font-size: ${fontSizeM};
+	font-family: ${fontFamilyC};
+	font-style: normal;
 }
 .z-chosenbox-sel-item-cnt {
 	font-size: 13px;
@@ -58,6 +61,8 @@
 	<c:if test="${zk.ie < 8}">
 		display: inline;
 	</c:if>
+	font-size: ${fontSizeM};
+	font-family: ${fontFamilyC};
 }
 .z-chosenbox-sel-item-focus {
 	background: #D4D4D4;

@@ -307,15 +307,12 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (getModel() != null) {
 			_selIdxs.clear();
 			ListModel<String> lm = getModel();
-			List<String> chgSel = new ArrayList<String>();
 			boolean found = false;
 			for (int j = 0; j < objects.size(); j ++) {
 				for (int i = 0; i < lm.getSize(); i++)
 					if (lm.getElementAt(i) == objects.get(j)) {
 						if (getSelectedIndex() == -1 || getSelectedIndex() > i)
 							_jsel = i;
-						if (!isRenderByServer())
-							chgSel.add(i+"");
 						found = true;
 						_selIdxs.add(i);
 						break;
@@ -324,15 +321,9 @@ public class Chosenbox extends HtmlBasedComponent {
 					throw new UiException("No such item: " + objects.get(j));
 				found = false;
 			}
-			if (isRenderByServer()) {
-				prepareItems(null, true);
-				if (_options != null) {
-					smartUpdate("chgSel", _options);
-					_options = null;
-				}
-			} else if (chgSel.size() > 0)
-				smartUpdate("chgSel", chgSel.toArray(new String[0]));
-			chgSel.clear();
+			if (_selIdxs.size() > 0) {
+				smartUpdate("chgSel", getChgSel());
+			}
 		}
 	}
 	/**
@@ -400,14 +391,10 @@ public class Chosenbox extends HtmlBasedComponent {
 	 */
 	public void setRenderByServer(boolean renderByServer) {
 		if (_renderByServer != renderByServer) {
-			if (!renderByServer) {
-				prepareItems(null, false);
-				if (_options != null) {
-					smartUpdate("listContent", _options);
-					_options = null; //purge the data
-				}
-			}
 			_renderByServer = renderByServer;
+			if (!renderByServer) {
+				updateListContent(null);
+			}
 			smartUpdate("renderByServer", _renderByServer);
 		}
 	}
@@ -554,7 +541,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 	private String[] getChgSel() {
 		if (isRenderByServer()) {
-			prepareItems(null, true);
+			prepareItems(null, true, false);
 			if (_options != null) {
 				String [] chgSel = _options;
 				_options = null;
@@ -578,7 +565,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (_selIdxs.size() > 0)
 			_chgSel = getChgSel();
 		if (!isRenderByServer())
-			prepareItems(null, false);
+			prepareItems(null, false, false);
 	}
 
 	// fix selected indexes while model changed or replaced
@@ -619,8 +606,16 @@ public class Chosenbox extends HtmlBasedComponent {
 			}
 		}
 	}
-	// render model content to String array
-	private void prepareItems(String prefix, boolean excludeUnselected) {
+	/**
+	 * prepare the list content or selected items to render,
+	 * @param prefix
+	 *            Only add the item starts with it if it is not null.
+	 * @param excludeUnselected
+	 *            Only add selected item, with select order.
+	 * @param excludeSelected
+	 *            Only add unselected item, with select order.
+	 */
+	private void prepareItems(String prefix, boolean excludeUnselected, boolean excludeSelected) {
 		if (_model != null) {
 			List<String> optList = new ArrayList<String>();
 			final boolean old = _childable;
@@ -637,7 +632,8 @@ public class Chosenbox extends HtmlBasedComponent {
 				} else {
 					for (int i = 0; i < _model.getSize(); i++) {
 						String s = renderer.render(this, _model.getElementAt(i), i) + "_" + i;
-						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase())))
+						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase()))
+							&& (!excludeSelected || !_selIdxs.contains(i)))
 							optList.add(s);
 					}
 				}
@@ -653,7 +649,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	private void updateItems() {
-		prepareItems(null, false);
+		prepareItems(null, false, false);
 		if (_options != null) {
 			smartUpdate("items", _options);
 			_options = null; //purge the data
@@ -662,11 +658,13 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 
 	private void updateListContent(String prefix) {
-		if (isRenderByServer()
-			&& (prefix == null || "".equals(prefix)))
+		if (isRenderByServer() && (prefix == null || "".equals(prefix)))
 			smartUpdate("listContent", new String[0]);
 		else {
-			prepareItems(prefix, false);
+			if (!isRenderByServer())
+				prepareItems(null, false, false);
+			else
+				prepareItems(prefix, false, true);
 			if (_options != null) {
 				smartUpdate("listContent", _options);
 				_options = null; //purge the data
