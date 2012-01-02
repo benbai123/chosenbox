@@ -119,7 +119,7 @@
 	font-size: ${fontSizeM};
 	font-weight: normal;
 	margin:0;
-	overflow:hidden;
+	overflow:auto;
 
 	-webkit-box-shadow: 0 4px 5px rgba(0,0,0,.15);
 	-moz-box-shadow   : 0 4px 5px rgba(0,0,0,.15);

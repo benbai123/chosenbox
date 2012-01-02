@@ -64,7 +64,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	private boolean _open;
 	private boolean _creatable;
 	private boolean _renderByServer;
-	private String _placeholder;
+	private String _emptyMessage;
 	private String _noResultsText;
 	private String _createMessage;
 	private String _separator;
@@ -169,29 +169,29 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	/**
-	 * Returns the placeholder of the input of this component.
+	 * Returns the emptyMessage of the input of this component.
 	 * <p>
 	 * Default: null.
 	 * <p>
-	 * The placeholder will be displayed in input if nothing selected and not focused.
+	 * The emptyMessage will be displayed in input if nothing selected and not focused.
 	 * @return String
 	 */
-	public String getPlaceholder() {
-		return _placeholder;
+	public String getEmptyMessage() {
+		return _emptyMessage;
 	}
 	/**
-	 * Sets the placeholder of the input of this component.
+	 * Sets the emptyMessage of the input of this component.
 	 * <p>
-	 * The placeholder will be displayed in input if nothing selected and not focused.
-	 * @param String placeholder
-	 *            the placeholder of the input of this component.
+	 * The emptyMessage will be displayed in input if nothing selected and not focused.
+	 * @param String emptyMessage
+	 *            the emptyMessage of the input of this component.
 	 */
-	public void setPlaceholder(String placeholder) {
-		if (placeholder != null && placeholder.length() == 0)
-			placeholder = null;
-		if (!Objects.equals(_placeholder, placeholder)) {
-			_placeholder = placeholder;
-			smartUpdate("placeholder", getPlaceholder());
+	public void setEmptyMessage(String emptyMessage) {
+		if (emptyMessage != null && emptyMessage.length() == 0)
+			emptyMessage = null;
+		if (!Objects.equals(_emptyMessage, emptyMessage)) {
+			_emptyMessage = emptyMessage;
+			smartUpdate("emptyMessage", getEmptyMessage());
 		}
 	}
 	/**
@@ -710,7 +710,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (_tabindex != 0)
 			renderer.render("tabindex", _tabindex);
 
-		render(renderer, "placeholder", getPlaceholder());
+		render(renderer, "emptyMessage", getEmptyMessage());
 		render(renderer, "noResultsText", getNoResultsText());
 		render(renderer, "separator", getSeparator());
 		render(renderer, "createMessage", getCreateMessage());

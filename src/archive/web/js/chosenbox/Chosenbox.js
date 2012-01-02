@@ -15,7 +15,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 (function () {
 	function clearAllData(wgt) {
 		wgt._clearSelection();
-		wgt.fixDisplay = wgt._separatorCode = wgt._startOnSearching = wgt._chgSel = wgt.fixInputWidth = null;
+		wgt._ppMaxHeight = wgt.fixDisplay = wgt._separatorCode = wgt._startOnSearching = wgt._chgSel = wgt.fixInputWidth = null;
 	}
 	function startOnSearching(wgt) {
 		if (!wgt._startOnSearching)
@@ -29,6 +29,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.$supers('$init', arguments);
 		this._selItems = [];
 		this._separatorCode = [];
+		this._ppMaxHeight = '350px';
 	},
 	$define: {
 		items: function (v) {
@@ -66,7 +67,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				this._doSelect(this._getItemByIndex(v));
 			}
 			if (v == -1)
-				this._fixPlaceholder(true);
+				this._fixEmptyMessage(true);
 		},
 		renderByServer: function (v) {
 			if (v && this.$n())
@@ -117,15 +118,15 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (n) n.name = name;
 		},
 		/**
-		 * Returns the placeholder,
+		 * Returns the emptyMessage,
 		 * it will be displayed if no selected items while not focused.
 		 * @return String
 		 */
 		/**
-		 * Sets the placeholder.
-		 * @param String placeholder
+		 * Sets the emptyMessage.
+		 * @param String emptyMessage
 		 */
-		placeholder: null,
+		emptyMessage: null,
 		/**
 		 * Returns the no-result text of this component.
 		 * <p>
@@ -306,7 +307,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this._selectedIndex = min;
 		} else
 			this._chgSel = val; // not binded, just store it
-		this._fixPlaceholder(true);
+		this._fixEmptyMessage(true);
 	},
 	bind_: function () {
 		this.$supers(chosenbox.Chosenbox, 'bind_', arguments);
@@ -323,8 +324,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.setChgSel(chgSel);
 			this._chgSel = null;
 		}
-		// fix placeholder
-		this._fixPlaceholder(true);
+		// fix emptyMessage
+		this._fixEmptyMessage(true);
 		if (this._open && !this.isDisabled())
 			this.setOpen(true);
 	},
@@ -497,12 +498,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				inp = this.$n('inp'),
 				zcls = this.getZclass();
 			this._removeLabelFocus();
-			if (inp.value == this._placeholder)
+			if (inp.value == this._emptyMessage)
 				inp.value = '';
 			if ($target.hasClass(zcls+'-option')) { // click on option
 				this._doSelect(target, {sendOnSelect: true});
 				if (this._open)
-					this.setOpen(false, {sendOnOpen: true, fixPlaceholder: true});
+					this.setOpen(false, {sendOnOpen: true, fixEmptyMessage: true});
 			} else if ($target.hasClass(zcls + '-empty-creatable')) { // click on new label
 				this._fireOnSearch(inp.value);
 				if (this._open)
@@ -538,7 +539,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			target.style.display = 'none'; // hide selected item
 			// record the selected item
 			this._selItems.push(itemIndex);
-			this._fixPlaceholder(true);
+			this._fixEmptyMessage(true);
 
 			if (opts && opts.sendOnSelect)
 				this.fireSelectEvent();
@@ -555,7 +556,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this._createLabel(value, index);
 			// record the selected item
 			this._selItems.push(index);
-			this._fixPlaceholder(true);
+			this._fixEmptyMessage(true);
 		}
 	},
 	// deselect an item
@@ -680,7 +681,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	onFloatUp: function(ctl){
 		if (this._open && (ctl.origin != this)) {
 			this._removeLabelFocus();
-			this.setOpen(false, {sendOnOpen: true, fixPlaceholder: true});
+			this.setOpen(false, {sendOnOpen: true, fixEmptyMessage: true});
 		}
 	},
 
@@ -729,7 +730,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			case 27://esc
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
-				this._fixPlaceholder();
+				this._fixEmptyMessage();
 				break;
 			default:
 				if (this._isSeparator(keyCode))
@@ -776,20 +777,22 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		}
 	},
 	open: function (n, pp, opts) {
-		var offset;
-		zk(pp).makeVParent();
+		var offset,
+			ppstyle = pp.style;
 
+		this._fixsz(pp);
+
+		zk(pp).makeVParent();
 		// required for setTopmost
 		this.setFloating_(true);
 		this.setTopmost();
 		offset = this._evalOffset(n);
+		ppstyle.left = offset.left + 'px';
+		ppstyle.top = offset.top + jq(n).outerHeight() + 'px';
+		ppstyle.zIndex = n.style.zIndex;
 
-		pp.style.left = offset.left + 'px';
-		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
-		pp.style.zIndex = n.style.zIndex;
-
+		zk(pp).slideDown(this, {duration: 100});
 		this._startFixDisplay({hliteFirst: true});
-		zk(pp).slideDown(this);
 
 		if (opts && opts.sendOnOpen)
 			this.fire('onOpen', {open:true});
@@ -803,11 +806,22 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		if (opts) {
 			if (opts.sendOnOpen)
 				this.fire('onOpen', {open:false});
-			if (opts.fixPlaceholder)
-				this._fixPlaceholder();
+			if (opts.fixEmptyMessage)
+				this._fixEmptyMessage();
 		}
 		if (this._renderByServer)
 			this._clearListContent();
+	},
+	_fixsz: function (pp) {
+		var ppstyle = pp.style;
+		ppstyle.height = 'auto';
+		ppstyle.left = "-10000px";
+		ppstyle.display = "block";
+		ppstyle.visibility = "hidden";
+		if (jq(pp).height() > 350)
+			ppstyle.height = this._ppMaxHeight;
+		ppstyle.display = "none";
+		ppstyle.visibility = "visible";
 	},
 	// calculate the left and top for drop-down list
 	_evalOffset: function (n) {
@@ -859,6 +873,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// filt out not matched item
 	_fixDisplay: function (opts) {
+		if (!this._open) return;
 		var fromServer = opts && opts.fromServer;
 		if (!this._renderByServer || (opts && opts.fromServer)) {
 			var str = this.$n('inp').value,
@@ -872,13 +887,16 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// fix the display content of options
 	_fixSelDisplay: function (hliteFirst, str, fromServer) {
-		var selItems = this._selItems,
+		var pp = this.$n('pp'),
+			$pp = jq(pp),
+			ppstyle = pp.style,
+			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
 			found = false, // unselected match item exist
 			exist = false, // selected match item exist
 			index, element, showAll, selected;
 		str = str? str.trim() : '';
-		showAll = str && str == this._placeholder || str == '';
+		showAll = str && str == this._emptyMessage || str == '';
 		// iterate through item list
 		for (index = 0, element = options[index];
 			index < options.length;
@@ -903,6 +921,9 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (!exist && str && element.innerHTML.toLowerCase() == str.toLowerCase())
 				exist = true;
 		}
+		ppstyle.height = 'auto';
+		if ($pp.height() > 350)
+			ppstyle.height = this._ppMaxHeight;
 		return {_found: found, _exist: exist};
 	},
 	// fix the display of no-result text block
@@ -950,12 +971,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		pp.style.left = offset.left + 'px';
 		pp.style.top = offset.top + jq(n).outerHeight() + 'px';
 	},
-	// show placeholder or clear input
-	_fixPlaceholder: function (force) {
+	// show emptyMessage or clear input
+	_fixEmptyMessage: function (force) {
 		var inp;
 		if ((!this._open || force) && (inp = this.$n('inp'))) {
 			
-			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getPlaceholder()) : '';
+			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getEmptyMessage()) : '';
 			this._fixInputWidth();
 			if (this._open)
 				this._startFixDisplay();
@@ -965,7 +986,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var v;
 		return this.$supers('domAttrs_', arguments)
 			+ (this.isDisabled() ? ' disabled="disabled"' :'')
-			+ ((v=this.getPlaceholder()) ? ' value="' + zUtl.encodeXML(v) + '"': '')
+			+ ((v=this.getEmptyMessage()) ? ' value="' + zUtl.encodeXML(v) + '"': '')
 			+ ((v=this.getTabindex()) ? ' tabindex="' + v + '"': '')
 			+ ((v=this.getName()) ? ' name="' + zUtl.encodeXML(v) + '"': '');
 	}
