@@ -1,6 +1,14 @@
-Chosenbox
+Chosenbox - Allow multiple value version
 =========================================
 A project like [JQuery Chosen](https://github.com/harvesthq/chosen/) but work with [ZK](http://www.zkoss.org/)
+
+This version handle all index and filter at both client side and server side,
+detect items by checking whether they are the same object,
+so you can create two or more different items with the same value.
+
+The master will go the ZK ListSubModel way which has no 'index' concept in it,
+it will detect items by String.equals() method and use the index of first matched object,
+it can not handle multiple objects with the same value.
 
 Employement/Purpose
 ------------------------------
