@@ -98,7 +98,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		return _open;
 	}
 	/**
-	 * Returns the tab order of this component.
+	 * Returns the tab order of the input node of this component.
 	 * <p>
 	 * Default: 0 (means the same as browser's default).
 	 */
@@ -107,7 +107,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 
 	/**
-	 * Sets the tab order of this component.
+	 * Sets the tab order of the input node of this component.
 	 */
 	public void setTabindex(int tabindex) throws WrongValueException {
 		if (_tabindex != tabindex) {
@@ -149,7 +149,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	}
 
 	/**
-	 * Sets the name of this component.
+	 * Sets the name of the input element of this component.
 	 * <p>
 	 * The name is used only to work with "legacy" Web application that handles
 	 * user's request by servlets. It works only with HTTP/HTML-based browsers.
@@ -271,7 +271,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	 * Support: 0-9, A-Z (case insensitive), and ,.;'[]/\-=
 	 * <p>
 	 * The separate chars will work as 'Enter' key,
-	 * it will not considered as input value but send onSerch or onSearching while key up. 
+	 * it will not considered as input value but send onSerch or onSelect while key up. 
 	 * @param String createMessage
 	 *            the create message of this component.
 	 */
