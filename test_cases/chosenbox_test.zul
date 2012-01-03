@@ -12,12 +12,14 @@
 			msg.setValue(_value);
 		}
 	]]></zscript>
-	<chosenbox model="${model}" tabindex="2">
-		<template name="model">Name is ${each}</template>
+	<chosenbox model="${model}" tabindex="2" selectedIndex="2" width="300px"
+		emptyMessage="This is the test box" creatable="true"
+		createMessage="create new - {0}" noResultsText="no such item - {0}"
+		onSelect="">
 	</chosenbox>
-	<chosenbox id="cbx" model="${model}" width="500px" renderByServer="true"
+	<chosenbox id="cbx" model="${submodel}" width="500px"
 		onChanging="" separator=",.;'/"
-		placeholder="This is the test box" tabindex="1" creatable="true"
+		emptyMessage="This is the test box" tabindex="1" creatable="true"
 		createMessage="create new - {0}" noResultsText="no such item - {0}"
 		selectedIndex="2" name="testbox">
 		<attribute name="onSelect">
@@ -35,16 +37,12 @@
 				}
 			self.invalidate();
 		</attribute>
-		<attribute name="onSearching">
-			addMsg(msg, "search value -- " + event.getValue());
-		</attribute>
 		<attribute name="onOpen">
 			if (self.isOpen())
 				addMsg(msg, "opened");
 			else
 				addMsg(msg, "closed");
 		</attribute>
-		<template name="model">Name is ${each}</template>
 	</chosenbox>
 	<div />
 	<button label="clear model">
@@ -116,10 +114,9 @@
 			addMsg(msg, "disable? " + cbx.isDisabled());
 		</attribute>
 	</checkbox>
-	<checkbox label="renderByServer" checked="true">
+	<checkbox label="use sub model" checked="true">
 		<attribute name="onCheck">
-			cbx.setRenderByServer(self.isChecked());
-			addMsg(msg, "render by server? " + cbx.isRenderByServer());
+			cbx.setModel(self.checked? submodel : model);
 		</attribute>
 	</checkbox>
 	<button label="remove first tony">

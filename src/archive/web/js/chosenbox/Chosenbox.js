@@ -29,7 +29,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.$supers('$init', arguments);
 		this._selItems = [];
 		this._separatorCode = [];
-		this._ppMaxHeight = '350px';
+		this._ppMaxHeight = 350;
 	},
 	$define: {
 		items: function (v) {
@@ -237,15 +237,16 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		var sel,
 			out,
 			oldHlite,
-			tmpIdx;
+			value;
 		if (sel = this.$n('sel')) {
 			if (oldHlite = jq(this.$n('sel')).find('.'+this.getZclass()+'-option-over')[0])
-				tmpIdx = this._getIndexFromItem(oldHlite);
+				value = oldHlite.innerHTML;
 			out = [];
 			this._renderItems(out, v);
 			this._clearListContent();
 			sel.innerHTML = out.join('');
-			if (tmpIdx && (oldHlite = this._getItemByIndex(tmpIdx)))
+			// restore old high-light
+			if (value && (oldHlite = this._getItemByValue(value)))
 				this._hliteOpt(oldHlite, true);
 			this._startFixDisplay({hliteFirst: true, fromServer: true});
 		}
@@ -258,18 +259,9 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	_renderItems: function (out, content) {
 		var s = $eval(content? content : this._items) || [],
-			zcls = this.getZclass(),
-			uuid = this.uuid,
-			ori,
-			cur,
-			val,
-			id;
+			zcls = this.getZclass();
 		for (var i = 0, j = s.length; i < j; i++) {
-			ori = s[i];
-			cur = ori.lastIndexOf('_');
-			val = ori.substring(0, cur);
-			id = uuid + '_' + ori.substring(cur+1, ori.length);
-			out.push('<div id="', id,'" class="',zcls,'-option">', zUtl.encodeXML(val), '</div>');
+			out.push('<div class="',zcls,'-option">', zUtl.encodeXML(s[i]), '</div>');
 		}
 		return out;
 	},
@@ -284,27 +276,17 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			options;
 		if (sel = this.$n('sel')) { // select each item
 			options = jq(sel).children();
-			var length = options.length,
-				s = $eval(val),
-				min = -1,
+			var s = $eval(val),
 				renderByServer = this._renderByServer,
-				index, item, ori, cur, value;
+				item,
+				value;
 			for (var i = 0; i < s.length; i++) {
-				ori = s[i];
-				if (renderByServer) {
-					cur = ori.lastIndexOf('_');
-					value = ori.substring(0, cur);
-				}
-				index = parseInt( renderByServer? ori.substring(cur+1, ori.length) : ori);
-				if (min == -1 || index < min)
-					min = index;
-				if (item = this._getItemByIndex(index))
+				value = s[i];
+				if (item = this._getItemByValue(value))
 					this._doSelect(item);
-				else {
-					this._selectItemDirectly(index, value);
-				}
+				else
+					this._selectItemDirectly(value);
 			}
-			this._selectedIndex = min;
 		} else
 			this._chgSel = val; // not binded, just store it
 		this._fixEmptyMessage(true);
@@ -313,14 +295,14 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this.$supers(chosenbox.Chosenbox, 'bind_', arguments);
 		var n = this.$n(),
 			inp = this.$n('inp'),
-			chgSel = this._chgSel;
+			chgSel;
 
 		this.domListen_(inp, 'onFocus', 'doFocus_')
 			.domListen_(inp, 'onBlur', 'doBlur_');
 		zWatch.listen({onFloatUp: this, onSize: this});
 		this._fixWidth(n);
 		// fix selecte status
-		if (chgSel) {
+		if (chgSel = this._chgSel) {
 			this.setChgSel(chgSel);
 			this._chgSel = null;
 		}
@@ -409,12 +391,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.setOpen(true, {sendOnOpen: true});
 		else {
 			// preset newHlite
-			if (oldHlite)
+			if (oldHlite) // get previous or next item of old hi-lighted one
 				newHlite = next? oldHlite.nextSibling : oldHlite.previousSibling;
-			else
+			else // get first/last item if no old hi-lighted
 				newHlite = next? sel.firstChild : // choose first/last option if no old highlighted
 					prev? sel.lastChild : null;
-			if (newHlite)
+			if (newHlite) // find closest visible new item
 				while (newHlite && newHlite.style.display == 'none')
 					newHlite = next? newHlite.nextSibling :
 								prev? newHlite.previousSibling : null;
@@ -457,7 +439,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			if (label = jq(this.$n()).find('.' + zcls)[0]) {
 				var dir = (label.previousSibling && key == 'backspace')? 'prev' : 'next';
 				this._moveLabelFocus(label, dir);
-				this._doDeselect(label, {sendOnSelect: true, fixSelectedIndex: true});
+				this._doDeselect(label, {sendOnSelect: true});
 				evt.stop(); // should stop or will delete text
 				// maybe have to filt out deselected item
 				this._startFixDisplay();
@@ -483,8 +465,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					this.setOpen(false, {sendOnOpen: true});
 			} else if (($sel = jq(this.$n('sel')))
 					&& (hlited = $sel.find('.'+this.getZclass()+'-option-over')[0])) {
-				var options = $sel.children(),
-					index;
+				var options = $sel.children();
 				this._doSelect(hlited, {sendOnSelect: true});
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
@@ -509,12 +490,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				if (this._open)
 					this.setOpen(false, {sendOnOpen: true});
 			} else {
-				if ($target.hasClass(zcls + '-sel-item')
-					|| $target.hasClass(zcls + '-sel-item-cnt')) { // click on label
-					var label = target,
-						zcls = this.getZclass() + '-sel-item';
-					if ($target.hasClass(zcls) || (label = $target.parent('.' + zcls)[0]))
-						jq(label).addClass(zcls + '-focus');
+				var label = target,
+					zcls = this.getZclass() + '-sel-item';
+				if ($target.hasClass(zcls)
+					|| (label = $target.parent('.' + zcls)[0])) { // click on label
+					jq(label).addClass(zcls + '-focus');
 				}
 				if (!this._open)
 					this.setOpen(true, {sendOnOpen: true});
@@ -527,47 +507,35 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	// select an item
 	_doSelect: function (target, opts) {
 		this._hliteOpt(target, false);
-		var _index = this._selectedIndex,
-			itemIndex = this._getIndexFromItem(target);
-		if (_index || _index == 0) {
-			if ((itemIndex < _index || _index == -1))
-				this._selectedIndex = itemIndex;
-		} else // undefined, null
-			this._selectedIndex = itemIndex;
-		if (this._selItems.indexOf(itemIndex) == -1) {
-			this._createLabel(target.innerHTML, itemIndex);
+		var value = target.innerHTML;
+		if (this._selItems.indexOf(value) == -1) {
+			this._createLabel(value);
 			target.style.display = 'none'; // hide selected item
 			// record the selected item
-			this._selItems.push(itemIndex);
+			this._selItems.push(value);
 			this._fixEmptyMessage(true);
 
 			if (opts && opts.sendOnSelect)
 				this.fireSelectEvent();
 		}
 	},
-	_selectItemDirectly: function (index, value) {
-		var _index = this._selectedIndex;
-		if (_index || _index == 0) {
-			if ((index < _index || _index == -1))
-				this._selectedIndex = index;
-		} else // undefined, null
-			this._selectedIndex = index;
-		if (this._selItems.indexOf(index) == -1) {
-			this._createLabel(value, index);
+	_selectItemDirectly: function (value) {
+		if (this._selItems.indexOf(value) == -1) {
+			this._createLabel(value);
 			// record the selected item
-			this._selItems.push(index);
+			this._selItems.push(value);
 			this._fixEmptyMessage(true);
 		}
 	},
 	// deselect an item
 	_doDeselect: function (selectedItem, opts) {
-		var index = selectedItem.opt_index,
-			element = this._getItemByIndex(index),
+		var value = jq(selectedItem).find('.' + this.getZclass() + '-sel-item-cnt')[0].innerHTML,
+			element = this._getItemByValue(value),
 			_selItems = this._selItems;
 		if (this._open)
 			this.setOpen(false, {sendOnOpen: true});
 		// remove record
-		_selItems.splice(_selItems.indexOf(index), 1);
+		_selItems.splice(_selItems.indexOf(value), 1);
 		// show origin option of deselected item if it exists
 		if (element)
 			element.style.display = 'block';
@@ -576,50 +544,25 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		this._updatePopupPosition();
 		if (opts && opts.sendOnSelect)
 			this.fireSelectEvent(); // only fire if active from client
-		if (opts && opts.fixSelectedIndex)
-			this._fixSelectedIndex();
 		// maybe have to filt out deselected item
 		this._startFixDisplay();
 	},
-	// get the real index from an option item
-	_getIndexFromItem: function (element) {
-		var id = element.id;
-		return parseInt(id.substring(id.lastIndexOf('_')+1, id.length));
-	},
-	_getItemByIndex: function (index) {
-		var options = jq(this.$n('sel')).children();
+	_getItemByValue: function (value) {
+		var options = jq(this.$n('sel')).children(),
+			item;
 		for (var i = 0; i < options.length; i++)
-			if (this._getIndexFromItem(options[i]) == index)
-				return options[i];
-			else if (i > index) // over index
-				break;
-		return null;
-	},
-	// fix the selected index after deselect an item
-	_fixSelectedIndex: function () {
-		var n = this.$n(),
-			c, // selected item
-			min = -1,
-			index;
-		if (n)
-			c = n.firstChild;
-		while (c && ((index = c.opt_index) || index == 0)) {
-			if (min == -1 || index < min)
-				min = index;
-			if (min == 0)
-				break;
-			c = c.nextSibling;
-		}
-		this._selectedIndex = min;
+			if ((item = options[i]) && item.innerHTML == value)
+				return item;
+			else if (!item) // over index
+				return null;
 	},
 	// create label for selected item
-	_createLabel: function (value, index) {
+	_createLabel: function (value) {
 		var span = document.createElement("span"),
 			content = document.createElement("div"),
 			delbtn = document.createElement("div"),
 			wgt = this,
 			zcls = this.getZclass();
-		span.opt_index = index; // save the index
 		span.className = zcls + '-sel-item';
 		content.innerHTML = value;
 		content.className = zcls + '-sel-item-cnt';
@@ -630,7 +573,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 		jq(delbtn).bind('click', function () {
 			if (!wgt.isDisabled()) {
 				wgt.$n('inp').focus();
-				wgt._doDeselect(span, {sendOnSelect: true, fixSelectedIndex: true});
+				wgt._doDeselect(span, {sendOnSelect: true});
 			}
 		});
 		this.$n().insertBefore(span, this.$n('inp')); // add div mark
@@ -638,31 +581,24 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	// clear all selected items
 	_clearSelection: function (opts) {
 		var n = this.$n(),
+			inp = this.$n('inp'),
 			c, // selected item
-			del,
-			index;
+			del;
 		if (n)
 			c = n.firstChild;
-			while (c) {
+			while (c && c != inp) {
 				del = c;
 				c = c.nextSibling;
-				index = del.opt_index;
-				if (index || index == 0)
-					this._doDeselect(del, opts);
-				else
-					break;
+				this._doDeselect(del, opts);
 			}
 		this._selItems.length = 0;
-		this._selectedIndex = -1;
 	},
 	// fire onSelectevent to server
 	fireSelectEvent: function () {
 		var	data = [],
-			c = this.$n().firstChild; // selected item
-		while (c && ((index = c.opt_index) || index == 0)) {
-			data.push(index);
-			c = c.nextSibling;
-		}
+			selItems = this._selItems; // selected item
+		for (var i = 0; i < selItems.length; i++)
+			data.push(selItems[i]);
 		this.fire('onSelect', data);
 	},
 	// fire onSearch event
@@ -712,8 +648,11 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				break;
 			default:
 				//separator processed in key up only
-				if (!this._isSeparator(keyCode))
+				if (!this._isSeparator(keyCode)) {
 					this._updateInput(evt);
+					if (!this._open)
+						this.setOpen(true, {sendOnOpen: true});
+				}
 				else
 					evt.stop();
 		}
@@ -739,7 +678,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 					this._fixInputWidth();
 					if (keyCode == 38 || keyCode == 40)
 						opts = null;
-					this._startFixDisplay(opts);
+					if (!this._renderByServer)
+						this._startFixDisplay(opts);
 				}
 		}
 		if (!(keyCode >= 37 && keyCode <= 40 || keyCode == 13))
@@ -757,8 +697,6 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			txcnt = this.$n('txcnt'),
 			wgt = this;
 
-		if (!this._open)
-			this.setOpen(true, {sendOnOpen: true});
 		// check every 100ms while input
 		if (!this.fixInputWidth)
 			this.fixInputWidth = setTimeout(function () {
@@ -798,7 +736,6 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this.fire('onOpen', {open:true});
 	},
 	close: function (pp, opts) {
-		var wgt = this;
 		zk(pp).undoVParent();
 		this.setFloating_(false);
 		pp.style.display = 'none';
@@ -813,13 +750,14 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			this._clearListContent();
 	},
 	_fixsz: function (pp) {
-		var ppstyle = pp.style;
+		var ppstyle = pp.style,
+			maxh = this._ppMaxHeight;
 		ppstyle.height = 'auto';
 		ppstyle.left = "-10000px";
 		ppstyle.display = "block";
 		ppstyle.visibility = "hidden";
-		if (jq(pp).height() > 350)
-			ppstyle.height = this._ppMaxHeight;
+		if (jq(pp).height() > maxh)
+			ppstyle.height = maxh+'px';
 		ppstyle.display = "none";
 		ppstyle.visibility = "visible";
 	},
@@ -861,15 +799,20 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			clearTimeout(this.fixInputWidth);
 		this.fixInputWidth = null;
 	},
-	// reduce the execution times of fix display
+	// prevent redundent fix display
 	_startFixDisplay: function (opts) {
-		var wgt = this,
-			old;
-		if (old = this.fixDisplay)
-			clearTimeout(old);
-		this.fixDisplay = setTimeout(function () {
-			wgt._fixDisplay(opts);
-		}, 200);
+		// fix asap if from server
+		if (opts && opts.fromServer)
+			this._fixDisplay(opts);
+		else { // replace old if exist and hold a while while input
+			var wgt = this,
+				old;
+			if (old = this.fixDisplay)
+				clearTimeout(old);
+			this.fixDisplay = setTimeout(function () {
+				wgt._fixDisplay(opts);
+			}, 200);
+		}
 	},
 	// filt out not matched item
 	_fixDisplay: function (opts) {
@@ -889,6 +832,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	_fixSelDisplay: function (hliteFirst, str, fromServer) {
 		var pp = this.$n('pp'),
 			$pp = jq(pp),
+			maxh = this._ppMaxHeight,
 			ppstyle = pp.style,
 			selItems = this._selItems,
 			options = jq(this.$n('sel')).children(),
@@ -902,7 +846,7 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			index < options.length;
 			index ++, element = options[index]) {
 			// should fix each element if renew content from server
-			selected = selItems.indexOf(this._getIndexFromItem(element)) != -1;
+			selected = selItems.indexOf(element.innerHTML) != -1;
 			if (fromServer || !selected) {
 				if (!selected &&
 						(showAll || str && element.innerHTML.toLowerCase().startsWith(str.toLowerCase()))) {
@@ -922,8 +866,8 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 				exist = true;
 		}
 		ppstyle.height = 'auto';
-		if ($pp.height() > 350)
-			ppstyle.height = this._ppMaxHeight;
+		if ($pp.height() > maxh)
+			ppstyle.height = maxh+'px';
 		return {_found: found, _exist: exist};
 	},
 	// fix the display of no-result text block
@@ -978,8 +922,9 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 			
 			inp.value = this._selItems.length == 0? zUtl.encodeXML(this.getEmptyMessage()) : '';
 			this._fixInputWidth();
-			if (this._open)
+			if (this._open) {
 				this._startFixDisplay();
+			}
 		}
 	},
 	domAttrs_: function () {

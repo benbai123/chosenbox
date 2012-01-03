@@ -70,6 +70,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	private String _separator;
 	private transient ListModel<?> _model;
 	private transient ListDataListener _dataListener;
+	private transient EventListener<InputEvent> _eventListener;
 	private transient ItemRenderer<?> _renderer;
 	private transient boolean _childable;
 	private transient String[] _options;
@@ -310,8 +311,8 @@ public class Chosenbox extends HtmlBasedComponent {
 			boolean found = false;
 			for (int j = 0; j < objects.size(); j ++) {
 				for (int i = 0; i < lm.getSize(); i++)
-					if (lm.getElementAt(i) == objects.get(j)) {
-						if (getSelectedIndex() == -1 || getSelectedIndex() > i)
+					if (lm.getElementAt(i).equals(objects.get(j))) {
+						if (_jsel == -1 || _jsel > i)
 							_jsel = i;
 						found = true;
 						_selIdxs.add(i);
@@ -359,43 +360,7 @@ public class Chosenbox extends HtmlBasedComponent {
 			_selIdxs.clear();
 			_jsel = jsel;
 			_selIdxs.add(jsel);
-			if (isRenderByServer())
-				smartUpdate("chgSel", getChgSel());
-			else
-				smartUpdate("selectedIndex", jsel, append);
-		}
-	}
-	/**
-	 * Returns whether the drop-down list is rendered by server side.
-	 * <p>
-	 * Default: false.
-	 * <p>
-	 * true: client side will not handle the drop-down options.
-	 * <p>
-	 * false: client side will handle the drop-down options.
-	 */
-	public boolean isRenderByServer() {
-		return _renderByServer;
-	}
-	/**
-	 * Sets whether the drop-down list is rendered by server side.
-	 * <p>
-	 * Default: false.
-	 * <p>
-	 * true: client side will not handle the drop-down options.
-	 * <p>
-	 * false: client side will handle the drop-down options.
-	 * 
-	 * @param renderByServer
-	 *            the boolean value.
-	 */
-	public void setRenderByServer(boolean renderByServer) {
-		if (_renderByServer != renderByServer) {
-			_renderByServer = renderByServer;
-			if (!renderByServer) {
-				updateListContent(null);
-			}
-			smartUpdate("renderByServer", _renderByServer);
+			smartUpdate("chgSel", getChgSel());
 		}
 	}
 	/**
@@ -474,9 +439,12 @@ public class Chosenbox extends HtmlBasedComponent {
 			}
 		} else if (_model != null) {
 			_model.removeListDataListener(_dataListener);
+			if (_model instanceof ListSubModel)
+				removeEventListener("onSearching", _eventListener);
 			_model = null;
 		}
 		fixIndexs(true, null);
+		smartUpdate("renderByServer", _model instanceof ListSubModel);
 		updateItems();
 	}
 
@@ -486,7 +454,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	public void clearSelection() {
 		_selIdxs.clear();
 		_jsel = -1;
-		if (isRenderByServer())
+		if (_model instanceof ListSubModel)
 			smartUpdate("chgSel", getChgSel());
 		else
 			smartUpdate("selectedIndex", -1);
@@ -501,7 +469,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (getModel() != null) {
 			ListModel lm = getModel();
 			for (int i = 0;i < lm.getSize();i ++) {
-				if (lm.getElementAt(i) == o) {
+				if (lm.getElementAt(i).equals(o)) {
 					_selIdxs.add(i);
 					if (i < _jsel)
 						_jsel = i;
@@ -520,7 +488,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		if (getModel() != null) {
 			ListModel lm = getModel();
 			for (int i = 0;i < lm.getSize();i ++) {
-				if (lm.getElementAt(i) == o) {
+				if (lm.getElementAt(i).equals(o)) {
 					int cur = -1, min = -1;
 					for (int j = 0; j < _selIdxs.size(); j++) {
 						if (i == _selIdxs.get(j).intValue()) {
@@ -540,20 +508,11 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	private String[] getChgSel() {
-		if (isRenderByServer()) {
-			prepareItems(null, true, false);
-			if (_options != null) {
-				String [] chgSel = _options;
-				_options = null;
-				return chgSel;
-			}
-		} else {
-			ListModel<String> lm = getModel();
-			List<String> chgSel = new ArrayList<String>();
-			for (Integer i : _selIdxs) {
-				chgSel.add(i.toString());
-			}
-			return chgSel.toArray(new String[0]);
+		prepareItems(null, true, _model);
+		if (_options != null) {
+			String [] chgSel = _options;
+			_options = null;
+			return chgSel;
 		}
 		return new String[0];
 	}
@@ -564,8 +523,8 @@ public class Chosenbox extends HtmlBasedComponent {
 	private void prepareData() {
 		if (_selIdxs.size() > 0)
 			_chgSel = getChgSel();
-		if (!isRenderByServer())
-			prepareItems(null, false, false);
+		if (!(_model instanceof ListSubModel))
+			prepareItems(null, false, _model);
 	}
 
 	// fix selected indexes while model changed or replaced
@@ -612,11 +571,11 @@ public class Chosenbox extends HtmlBasedComponent {
 	 *            Only add the item starts with it if it is not null.
 	 * @param excludeUnselected
 	 *            Only add selected item, with select order.
-	 * @param excludeSelected
-	 *            Only add unselected item, with select order.
+	 * @param model
+	 *            the model to render.
 	 */
-	private void prepareItems(String prefix, boolean excludeUnselected, boolean excludeSelected) {
-		if (_model != null) {
+	private void prepareItems(String prefix, boolean excludeUnselected, ListModel model) {
+		if (model != null) {
 			List<String> optList = new ArrayList<String>();
 			final boolean old = _childable;
 			try {
@@ -625,15 +584,14 @@ public class Chosenbox extends HtmlBasedComponent {
 				// order by _selIdxs content if only prepare selected items
 				if (excludeUnselected) {
 					for (int i = 0; i < _selIdxs.size(); i++) {
-						String s = renderer.render(this, _model.getElementAt(_selIdxs.get(i)), _selIdxs.get(i)) + "_" + _selIdxs.get(i);
+						String s = renderer.render(this, model.getElementAt(_selIdxs.get(i)), _selIdxs.get(i));
 						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase())))
 							optList.add(s);
 					}
 				} else {
-					for (int i = 0; i < _model.getSize(); i++) {
-						String s = renderer.render(this, _model.getElementAt(i), i) + "_" + i;
-						if ((prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase()))
-							&& (!excludeSelected || !_selIdxs.contains(i)))
+					for (int i = 0; i < model.getSize(); i++) {
+						String s = renderer.render(this, model.getElementAt(i), i);
+						if (prefix == null || s.toLowerCase().startsWith(prefix.toLowerCase()))
 							optList.add(s);
 					}
 				}
@@ -649,7 +607,7 @@ public class Chosenbox extends HtmlBasedComponent {
 		}
 	}
 	private void updateItems() {
-		prepareItems(null, false, false);
+		prepareItems(null, false, _model);
 		if (_options != null) {
 			smartUpdate("items", _options);
 			_options = null; //purge the data
@@ -657,14 +615,14 @@ public class Chosenbox extends HtmlBasedComponent {
 		smartUpdate("chgSel", getChgSel());
 	}
 
-	private void updateListContent(String prefix) {
-		if (isRenderByServer() && (prefix == null || "".equals(prefix)))
+	private void updateListContent(String prefix, ListModel subModel) {
+		if ((_model instanceof ListSubModel) && (prefix == null || "".equals(prefix)))
 			smartUpdate("listContent", new String[0]);
 		else {
-			if (!isRenderByServer())
-				prepareItems(null, false, false);
+			if (!(_model instanceof ListSubModel))
+				prepareItems(null, false, subModel);
 			else
-				prepareItems(prefix, false, true);
+				prepareItems(prefix, false, subModel);
 			if (_options != null) {
 				smartUpdate("listContent", _options);
 				_options = null; //purge the data
@@ -680,7 +638,25 @@ public class Chosenbox extends HtmlBasedComponent {
 					updateItems();
 				}
 			};
+		if (_eventListener == null)
+			_eventListener = new EventListener<InputEvent>() {
+				public void onEvent(InputEvent event) throws Exception {
+					if (getModel() instanceof ListSubModel) {
+						updateListContent(event.getValue(), ((ListSubModel)_model).getSubModel(event.getValue(), _model.getSize()));
+					}
+				}
+			};
 		_model.addListDataListener(_dataListener);
+
+		if (_model instanceof ListSubModel)
+			addEventListener("onSearching", _eventListener);
+	}
+	private Integer getIndexFromValue(String value) {
+		for (int i = 0; i < _model.getSize(); i++) {
+			if (value.equals(_model.getElementAt(i)))
+				return Integer.valueOf(i);
+		}
+		throw new UiException("No such item: " + value);
 	}
 
 	// -- ComponentCtrl --//
@@ -706,7 +682,6 @@ public class Chosenbox extends HtmlBasedComponent {
 
 		render(renderer, "name", _name);
 		render(renderer, "disabled", isDisabled());
-		render(renderer, "renderByServer", isRenderByServer());
 		if (_tabindex != 0)
 			renderer.render("tabindex", _tabindex);
 
@@ -716,19 +691,20 @@ public class Chosenbox extends HtmlBasedComponent {
 		render(renderer, "createMessage", getCreateMessage());
 		renderer.render("selectedIndex", _jsel);
 		renderer.render("creatable", _creatable);
+		renderer.render("renderByServer", _model instanceof ListSubModel);
 		render(renderer, "open", _open);
 	}
 	@SuppressWarnings("unchecked")
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
 		if (cmd.equals(Events.ON_SELECT)) {
-			List selIdxs = (List)request.getData().get("");
+			List selItems = (List)request.getData().get("");
 			// clear at first
 			_selIdxs.clear();
 			_jsel = -1;
 
-			for (int i = 0; i < selIdxs.size(); i++) {
-				int idx = Integer.parseInt(selIdxs.get(i).toString());
+			for (int i = 0; i < selItems.size(); i++) {
+				int idx = getIndexFromValue(selItems.get(i).toString());
 				_selIdxs.add(idx);
 				if (idx < _jsel || _jsel == -1)
 					_jsel = idx;
@@ -744,15 +720,8 @@ public class Chosenbox extends HtmlBasedComponent {
 			Events.postEvent(new Event("onSearch", this, ((List)request.getData().get("")).get(0).toString()));
 		} else if (cmd.equals("onSearching")) {
 			Object data = ((List)request.getData().get("")).get(0);
-			String value;
-			if (data == null)
-				value = "";
-			else
-				value = data.toString();
-			_value = value;
-			if (isRenderByServer())
-				updateListContent(value);
-			Events.postEvent(new InputEvent(cmd, this, value, _value));
+			Events.postEvent(new InputEvent(cmd, this, (String)data, _value));
+			_value = (String)data;
 		}
 	}
 	private static final ItemRenderer<Object> _defRend = new ItemRenderer<Object>() {
