@@ -7,7 +7,6 @@ Employement/Purpose
 
 - A multiple selectbox.
 
-
 Example
 ------------------------------
 
@@ -22,6 +21,13 @@ Example
 </code></pre>
 
 [View Result](https://github.com/benbai123/chosenbox/blob/master/sample_src/img/Chosenbox_ex_01.png)
+
+### More examples
+------------------------------
+There is a project under /sample_src/project called MultiInOne, it is a maven project so you can import and run it if you have appropriate maven environment.
+
+Without maven, you can download the latest ZK6 Freshly and put the jars with dist/lib/chosenbox.jar into WEB-INF/lib as need.
+
 
 Properties and Features
 ------------------------------
@@ -86,3 +92,38 @@ event-driven model.
 ### disabled
 ------------------------------
 Sets whether it is disabled.
+
+Properties and Features
+------------------------------
+
+### onSelect
+------------------------------
+Event: SelectEvent
+
+Data: Selected objects, can get from SelectEvent#getSelectedObjects()
+
+An item selected/deselected.
+
+### onSearching
+------------------------------
+Event: InputEvent
+
+Data: Value, can get from InputEvent#getValue()
+
+Input field content changed, it will trigger event listener of model if use ListSubModel
+
+### onSearch
+------------------------------
+Event: Event
+
+Data: Value to search, cen get from event#getData()
+
+User input a new item and want to create it.
+
+### onOpen
+------------------------------
+Event: OpenEvent
+
+Data: Open status, can get from OpenEvent#isOpoen()
+
+Drop-down list opened/closed.

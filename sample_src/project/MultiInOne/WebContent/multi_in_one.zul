@@ -1,0 +1,29 @@
+<zk>
+	<vbox>
+		<div height="20px"></div>
+		<div>
+			Chosen box demo - multiple level select in one.
+			<div></div>
+			Below is a chosenbox, controlled by composer,
+			<div></div>
+			each action of select/deselect an item will change its model/status,
+			<div></div>
+			make it works as multi-level select box.
+			<div></div>
+			The first two level is not creatable,
+			<div></div>
+			you can only select one of the item in it,
+			<div></div>
+			the third level is creatable,
+			<div></div>
+			you can type something not in list then press
+			<div></div>
+			Enter ',' '.' or ';' to choose it,
+		</div>
+		<window apply="test.MultiInOneComposer">
+			<chosenbox id="chosen" width="300px" separator=",.;" />
+			<div></div>
+			<label id="result" pre="true" />
+		</window>
+	</vbox>
+</zk>

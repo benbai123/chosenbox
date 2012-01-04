@@ -1,0 +1,124 @@
+<zk>
+	<vbox>
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setOpen(boolean open)</div>
+			<div width="300px">Open or close this Chosenbox.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public boolean isOpen()</div>
+			<div width="300px">Get the open/close status of this Chosenbox.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setCreatable(boolean creatable)</div>
+			<div width="300px">Set whether send data back while user input a value which does not exist.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public boolean isCreatable()</div>
+			<div width="300px">Get the creatable value.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setEmptyMessage(String emptyMessage)</div>
+			<div width="300px">Sets the emptyMessage of the input of this component.<div></div>
+			The emptyMessage will be displayed in input if nothing selected and not focused.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public String getEmptyMessage()</div>
+			<div width="300px">Returns the emptyMessage of the input of this component.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setNoResultsText(String noResultsText)</div>
+			<div width="300px">Sets the noResultsText of this component.<div></div>
+			The noResultsText will be displayed in popup if nothing match to the input value and can not create either,
+	 		the syntax "{0}" will be replaced with the input value at client side.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public String getNoResultsText()</div>
+			<div width="300px">Returns the noResultsText of this component.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setCreateMessage(String createMessage)</div>
+			<div width="300px">Sets the create message of this component.<div></div>
+			The create message will be displayed in popup if nothing match to the input value but can create as new label,
+	 		the syntax "{0}" will be replaced with the input value at client side.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public String getCreateMessage()</div>
+			<div width="300px">Returns the create message of this component.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setSelectedObjects (List objects)</div>
+			<div width="300px">Returns all selected items.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px"><![CDATA[public LinkedHashSet<Object> getSelectedObjects ()]]></div>
+			<div width="300px">Selects the given items.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setSelectedIndex(int jsel)</div>
+			<div width="300px">Deselects all of the currently selected items and selects the item with the given index.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public int getSelectedIndex()</div>
+			<div width="300px">Returns the index of the selected item (-1 if no one is selected).</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void clearSelection()</div>
+			<div width="300px">Clears the selection.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public void addItemToSelection(Object o)</div>
+			<div width="300px">Selects the given item, without deselecting any other items that are already selected.</div>
+		</hbox>
+		
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px"><![CDATA[public void setModel(ListModel<?> model)]]></div>
+			<div width="300px">Sets the list model associated with this chosenbox.
+				If a non-null model is assigned, no matter whether it is the same as the previous,
+				it will always cause re-render.<div></div><div></div>
+				If you set ListModelList to it,
+				All the content will send to client side and process at client side,
+				this is pretty fast with few items but will cause performance issue at client side
+				if there are lots of items (e.g., 40000 or more) in model.<div height="15px"></div>
+				If you set ListSubMmodel to it,
+				The content of drop-down list will not rendered to client side,
+				and is blank without input,
+				server will provide the 'matched' content after user input,
+				this will cause some delay at client side caused by
+				the server processing time and network transfer time.<div height="15px"></div>
+				*NOTE: Since ListSubModel can be implemented in various way,
+				the "index" concept is not reliable with it.
+			</div>
+		</hbox>
+
+		<hbox style="padding: 7px;">
+			<div width="300px">public void setDisabled(boolean disabled)</div>
+			<div width="300px">Set whether this chosenbox is disabled.</div>
+		</hbox>
+
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">public void setName(String name)</div>
+			<div width="300px">Set the name of the input element of the chosenbox.</div>
+		</hbox>
+		
+		<hbox style="padding: 7px;">
+			<div width="300px">public void setTabindex(int tabindex) throws WrongValueException</div>
+			<div width="300px">Set the tabindex of the input element of the chosenbox.</div>
+		</hbox>
+		
+	</vbox>
+</zk>

@@ -1,0 +1,34 @@
+<zk>
+	<zscript>
+		<![CDATA[
+		String[] items = { new String("Item 1"), new String("Item 2"), new String("Item 3")};
+		ListModelList model = new ListModelList(items);
+	]]></zscript>
+	<hbox>
+		<chosenbox width="250px" model="${model}"
+			emptyMessage="Simple demo"
+			noResultsText="No such item - {0}"
+			createMessage="Create item - {0}"
+			creatable="true">
+			<attribute name="onSelect">
+				Integer index = self.getSelectedIndex();
+				Object objs = event.getSelectedObjects();
+				msg.setValue(msg.getValue()+"\n\nEvent: onSelect\nIndex: "+index+"\nItem: "+objs);
+			</attribute>
+			<attribute name="onSearch">
+				String item = (String)event.getData();
+				model.add(item);
+				self.addItemToSelection(item);
+				msg.setValue(msg.getValue()+"\n\nEvent: onSearch\nItem: "+item+"\n\nItem Created!");
+			</attribute>
+			<attribute name="onSearching">
+				String value = ((InputEvent)event).getValue();
+				msg.setValue(msg.getValue()+"\n\nEvent: onSearching\nValue: "+value);
+			</attribute>
+			<attribute name="onOpen">
+				msg.setValue(msg.getValue()+"\n\nEvent: onOpen\nStatus: "+event.isOpen());
+			</attribute>
+		</chosenbox>
+		<textbox rows="15" width="150px" id="msg" value="" />
+	</hbox>
+</zk>

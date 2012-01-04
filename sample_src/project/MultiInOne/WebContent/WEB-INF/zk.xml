@@ -1,0 +1,17 @@
+<zk>
+	<device-config>
+		<device-type>ajax</device-type>
+			<embed><![CDATA[
+				<script type="text/javascript">
+					zk.afterLoad("zul.inp", function () {
+						var oldSetValue = zul.inp.Textbox.prototype.set_value;
+						zul.inp.Textbox.prototype.set_value = function (value, fromServer) {
+							oldSetValue.apply(this, arguments);
+							var n = this.$n();
+							n.scrollTop  = n.scrollHeight;
+						}
+					});
+				</script>
+		]]></embed>
+	</device-config>
+</zk>

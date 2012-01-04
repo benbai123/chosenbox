@@ -1,0 +1,20 @@
+<zk>
+	<vbox>
+		<hbox style="padding: 7px;">
+			<div width="300px">onSelect</div>
+			<div width="300px">An item selected/deselected.</div>
+		</hbox>
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">onOpen</div>
+			<div width="300px">Drop-down list opened/closed.</div>
+		</hbox>
+		<hbox style="padding: 7px;">
+			<div width="300px">onSearching</div>
+			<div width="300px">Input field content changed.</div>
+		</hbox>
+		<hbox style="background-color: #CCCCCC; padding: 7px;">
+			<div width="300px">onSearch</div>
+			<div width="300px">User input a new item and want to create it.</div>
+		</hbox>
+	</vbox>
+</zk>

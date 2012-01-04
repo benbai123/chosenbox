@@ -1,0 +1,35 @@
+<zk>
+	<absolutelayout style="overflow: auto;">
+		<absolutechildren x="100" y="50">
+			<zscript><![CDATA[
+				String[] blocks = { new String("APIs"), new String("Events"), new String("SimpleSample"), new String("MultiInOne")};
+				ListModelList ctrls = new ListModelList(blocks);
+				public void setVisible(Window win, Set selectedObjects) {
+					for (String s : ctrls) {
+						if (selectedObjects == null || !selectedObjects.contains(s))
+							win.getFellow(s).setVisible(false);
+						else
+							win.getFellow(s).setVisible(true);
+					}
+				}
+			]]></zscript>
+			<window id="win">
+				<chosenbox width="250px" model="${ctrls}"
+					emptyMessage="Choose the block to display"
+					noResultsText="No such block {0}">
+					<attribute name="onSelect">
+						setVisible(win, event.getSelectedObjects());
+					</attribute>
+					<attribute name="onDelete">
+						setVisible(win, event.getSelectedObjects());
+					</attribute>
+				</chosenbox>
+				<include id="SimpleSample" src="simple_sample.zul" visible="false" />
+				<include id="MultiInOne" src="multi_in_one.zul" visible="false" />
+				<div height="20px">.</div>
+				<include id="APIs" src="apis.zul" visible="false" />
+				<include id="Events" src="events.zul" visible="false" />
+			</window>
+		</absolutechildren>
+	</absolutelayout>
+</zk>

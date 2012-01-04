@@ -287,8 +287,8 @@ public class Chosenbox extends HtmlBasedComponent {
 	 * Returns the selected objects.
 	 * @return Set
 	 */
-	public Set<Object> getSelectedObjects () {
-		final Set<Object> objects = new LinkedHashSet<Object>();
+	public LinkedHashSet<Object> getSelectedObjects () {
+		final LinkedHashSet<Object> objects = new LinkedHashSet<Object>();
 		ListModel model = (ListModel)this.getModel();
 		if (model != null) {
 			for (int i = 0; i < _selIdxs.size(); i ++) {
@@ -454,10 +454,7 @@ public class Chosenbox extends HtmlBasedComponent {
 	public void clearSelection() {
 		_selIdxs.clear();
 		_jsel = -1;
-		if (_model instanceof ListSubModel)
-			smartUpdate("chgSel", getChgSel());
-		else
-			smartUpdate("selectedIndex", -1);
+		smartUpdate("chgSel", getChgSel());
 	}
 	/**
 	 * Add an item into selection.

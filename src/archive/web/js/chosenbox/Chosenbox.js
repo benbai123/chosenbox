@@ -457,7 +457,12 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	// called after press enter and release
 	_doEnterPressed: function () {
 		var $sel,
-			hlited;
+			hlited,
+			old;
+		// clear timer and fix display before process
+		if (old = this.fixDisplay)
+			clearTimeout(old);
+		this._fixDisplay();
 		if (this._open) {
 			if ((hlited = this.$n('empty')) && jq(hlited).hasClass(this.getZclass() + '-empty-creatable')) {
 				this._fireOnSearch(this.$n('inp').value);
@@ -615,9 +620,10 @@ chosenbox.Chosenbox = zk.$extends(zul.Widget, {
 	},
 	// should close drop-down list if not click self
 	onFloatUp: function(ctl){
-		if (this._open && (ctl.origin != this)) {
+		if (ctl.origin != this) {
+			if (this._open)
+				this.setOpen(false, {sendOnOpen: true, fixEmptyMessage: true});
 			this._removeLabelFocus();
-			this.setOpen(false, {sendOnOpen: true, fixEmptyMessage: true});
 		}
 	},
 
