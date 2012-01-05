@@ -128,3 +128,30 @@ Event: OpenEvent
 Data: Open status, can get from OpenEvent#isOpoen()
 
 Drop-down list opened/closed.
+
+Keystroke
+------------------------------
+
+### Left, Right
+------------------------------
+Move between label/input text.
+
+### Up, Down
+------------------------------
+Move between options.
+
+### ESC
+------------------------------
+Clear input and close drop-down list.
+
+### Delete
+------------------------------
+Delete the current focused label, and move to next label if any.
+
+### Backspace
+------------------------------
+Delete the current focused label, and move to previous label, if no previous label, move to next label if any.
+
+### Enter, separator
+------------------------------
+Select focused option, send onSearch event.
