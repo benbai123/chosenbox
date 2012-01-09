@@ -73,7 +73,7 @@ true: Display createMessage while user input a value which not in model, and sen
 
 false: Display noResultsText while user input a value which not in model.
 
-tabindex
+### tabindex
 ------------------------------
 The tab order of the input node of this component.
 
@@ -94,7 +94,7 @@ event-driven model.
 ------------------------------
 Sets whether it is disabled.
 
-Properties and Features
+Events
 ------------------------------
 
 ### onSelect
